@@ -112,20 +112,9 @@ class CSVGraphApp(QMainWindow):
         if not file_name:
             return
 
-        self.statusBar().showMessage(f"Loaded rows from {file_name}")
         self.csv1_title.setText(QFileInfo(file_name).fileName())
-        csv2_header = self.methods.read_csv_header(file_name, limit_row=46, titles=[0, 34, 42])
-
-        self.table_csv1.setRowCount(len(csv2_header))
-        for row, (param, value) in enumerate(csv2_header):
-            param_item = QTableWidgetItem(param)
-            param_item.setFlags(Qt.ItemFlag.ItemIsEnabled)
-            self.table_csv1.setItem(row, 0, param_item)
-
-            value_item = QTableWidgetItem(value)
-            value_item.setFlags(Qt.ItemFlag.ItemIsEnabled)
-            self.table_csv1.setItem(row, 1, value_item)
-
+        csv1_header = self.methods.read_csv_header(file_name, limit_row=46, titles=[0, 34, 42])
+        self.populate_table(self.table_csv1, csv1_header, file_name)
         self.df_csv1 = self.methods.return_dataframe(file_name, skip=47)
 
     def open_csv2(self) -> None:
@@ -134,21 +123,26 @@ class CSVGraphApp(QMainWindow):
         if not file_name:
             return
 
-        self.statusBar().showMessage(f"Loaded rows from {file_name}")
         self.csv2_title.setText(QFileInfo(file_name).fileName())
         csv2_header = self.methods.read_csv_header(file_name, limit_row=46, titles=[0, 34, 42])
+        self.populate_table(self.table_csv2, csv2_header, file_name)
+        self.df_csv2 = self.methods.return_dataframe(file_name, skip=47)
 
-        self.table_csv2.setRowCount(len(csv2_header))
-        for row, (param, value) in enumerate(csv2_header):
+    def populate_table(self, _table_widget: QTableWidget, _data: pd, _csv: str):
+        """" populate table_csv1 and table_csv2 """
+
+        _table_widget.setRowCount(len(_data))
+
+        for row, (param, value) in enumerate(_data):
             param_item = QTableWidgetItem(param)
             param_item.setFlags(Qt.ItemFlag.ItemIsEnabled)
-            self.table_csv2.setItem(row, 0, param_item)
+            _table_widget.setItem(row, 0, param_item)
 
             value_item = QTableWidgetItem(value)
             value_item.setFlags(Qt.ItemFlag.ItemIsEnabled)
-            self.table_csv2.setItem(row, 1, value_item)
+            _table_widget.setItem(row, 1, value_item)
 
-        self.df_csv2 = self.methods.return_dataframe(file_name, skip=47)
+        self.statusBar().showMessage(f"Loaded rows from {_csv}")
 
     def plot_data(self) -> None:
 
