@@ -40,6 +40,15 @@ class CSVGraphApp(QMainWindow):
         self.table_csv2.resizeColumnsToContents()
         self.table_csv2.resizeRowsToContents()
         self.table_csv2.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeMode.Stretch)
+
+        self.table_widget = QTableWidget(self)
+        self.table_widget.setColumnCount(2)
+        self.table_widget.setHorizontalHeaderLabels(['csv 1', 'csv 2'])
+        self.table_widget.verticalHeader().setVisible(False)
+        self.table_widget.resizeColumnsToContents()
+        self.table_widget.resizeRowsToContents()
+        self.table_widget.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeMode.Stretch)
+
         self.left_panel.setAlignment(Qt.AlignmentFlag.AlignTop)
         self.left_panel.setContentsMargins(8, 30, 8, 8)
 
@@ -47,6 +56,7 @@ class CSVGraphApp(QMainWindow):
         self.left_panel.addWidget(self.table_csv1, 1, 0)
         self.left_panel.addWidget(self.csv2_title, 2, 0)
         self.left_panel.addWidget(self.table_csv2, 3, 0)
+        self.left_panel.addWidget(self.table_widget, 4, 0)
 
         w_left_panel = QWidget()
         w_left_panel.setLayout(self.left_panel)
@@ -57,9 +67,9 @@ class CSVGraphApp(QMainWindow):
         right_panel = QVBoxLayout()
         toolbar = self.addToolBar('menu')
         self.load_csv1 = QAction(QIcon(r'icons/csv-file.png'), 'Load CSV', self)
-        self.load_csv1.triggered.connect(self.open_csv1)
+        self.load_csv1.triggered.connect(lambda: self.open_csv(action=1))
         self.load_csv2 = QAction(QIcon(r'icons/csv-file_2.png'), 'Load CSV', self)
-        self.load_csv2.triggered.connect(self.open_csv2)
+        self.load_csv2.triggered.connect(lambda: self.open_csv(action=2))
         self.plot_button = QAction(QIcon(r'icons/plot-graph.png'), 'Plot Data', self)
         self.plot_button.triggered.connect(self.plot_data)
         self.plot_clear = QAction(QIcon(r'icons/clear.png'), 'Clear plot and data', self)
@@ -104,29 +114,36 @@ class CSVGraphApp(QMainWindow):
 
         self.methods = Methods()
         self.df_csv1: pd = None
+        self.df_csv1_name: str = 'csv 1'
         self.df_csv2: pd = None
+        self.df_csv2_name: str = 'csv 2'
 
-    def open_csv1(self) -> None:
+    def open_csv(self, action) -> None:
+
         file_name, _ = QFileDialog.getOpenFileName(self, "Open CSV File", "", "CSV Files (*.csv);;All Files (*)")
 
         if not file_name:
             return
 
-        self.csv1_title.setText(QFileInfo(file_name).fileName())
-        csv1_header = self.methods.read_csv_header(file_name, limit_row=46, titles=[0, 34, 42])
-        self.populate_table(self.table_csv1, csv1_header, file_name)
-        self.df_csv1 = self.methods.return_dataframe(file_name, skip=47)
+        if action == 1:
+            self.read_csv_header(file_name, self.table_csv1, self.df_csv1_name, self.csv1_title)
+            self.df_csv1 = self.methods.return_dataframe(file_name, skip=47)
+        elif action == 2:
+            self.read_csv_header(file_name, self.table_csv2, self.df_csv2_name, self.csv2_title)
+            self.df_csv2 = self.methods.return_dataframe(file_name, skip=47)
+        else:
+            self.error_box('No implementation')
 
-    def open_csv2(self) -> None:
-        file_name, _ = QFileDialog.getOpenFileName(self, "Open CSV File", "", "CSV Files (*.csv);;All Files (*)")
+        self.populate_dropping_buttons()
 
-        if not file_name:
-            return
+    def read_csv_header(self, _file: str, _table: QTableWidget, _name: str, _qtitle: QLabel) -> None:
+        """ populates tables with the header parameters from each CSV file and populate the table
+         with buttons to drop columns of every csv """
 
-        self.csv2_title.setText(QFileInfo(file_name).fileName())
-        csv2_header = self.methods.read_csv_header(file_name, limit_row=46, titles=[0, 34, 42])
-        self.populate_table(self.table_csv2, csv2_header, file_name)
-        self.df_csv2 = self.methods.return_dataframe(file_name, skip=47)
+        _name = QFileInfo(_file).baseName()  # fileName() to have it with the extension
+        _qtitle.setText(_name)
+        _header = self.methods.read_csv_header(_file, limit_row=46, titles=[0, 34, 42])
+        self.populate_table(_table, _header, _file)
 
     def populate_table(self, _table_widget: QTableWidget, _data: pd, _csv: str):
         """" populate table_csv1 and table_csv2 """
@@ -144,6 +161,35 @@ class CSVGraphApp(QMainWindow):
 
         self.statusBar().showMessage(f"Loaded rows from {_csv}")
 
+    def populate_dropping_buttons(self) -> None:
+        """" populate the table with the buttons to drop tables """
+        if self.df_csv1 is not None and self.df_csv2 is not None:
+            self.table_widget.setHorizontalHeaderLabels([self.df_csv1_name, self.df_csv2_name])
+            self.table_widget.setRowCount(self.max_rows_to_drop())
+            self.buttons_fillers(self.df_csv1, 0)
+            self.buttons_fillers(self.df_csv2, 1)
+
+    def buttons_fillers(self, _dataframe: pd, _col: int):
+        for row_idx, column in enumerate(_dataframe.columns):
+            drop_button = QPushButton(f'Drop {column}', self)
+            drop_button.clicked.connect(lambda checked, col=column: self.drop_column(col, _dataframe))
+            self.table_widget.setCellWidget(row_idx, _col, drop_button)
+
+    def max_rows_to_drop(self) -> int:
+        return max(self.df_csv1.shape[1], self.df_csv2.shape[1])
+
+    def drop_column(self, column, _dataframe):
+        if column in _dataframe.columns:
+            _dataframe.drop(columns=column, inplace=True, axis=1)
+            self.update_dropping_buttons(self.df_csv1, self.df_csv2)
+            print(_dataframe)
+
+    def update_dropping_buttons(self, _csv1: pd, _csv2: pd):
+        self.table_widget.clearContents()
+        self.table_widget.setRowCount(self.max_rows_to_drop())
+        self.buttons_fillers(_csv1, 0)
+        self.buttons_fillers(_csv2, 1)
+
     def plot_data(self) -> None:
 
         if self.df_csv1 is None or self.df_csv2 is None:
@@ -155,11 +201,11 @@ class CSVGraphApp(QMainWindow):
         print(self.df_csv1.shape)
         print(self.df_csv2.shape)
 
-        x_1 = self.df_csv1.s3
-        y_1 = self.df_csv2.s3
+        x_1 = self.df_csv1.Sensor4
+        y_1 = self.df_csv2.Sensor4
 
-        x_2 = self.df_csv1.s4
-        y_2 = self.df_csv2.s4
+        x_2 = self.df_csv1.Sensor5
+        y_2 = self.df_csv2.Sensor5
 
         self.plot_widget.clear()
         self.plot_widget.plot(x_1, y_1, pen=pg.mkPen(QColor(249, 127, 63), width=2))
@@ -174,6 +220,8 @@ class CSVGraphApp(QMainWindow):
             self.table_csv1.removeRow(0)
         while self.table_csv2.rowCount() > 0:
             self.table_csv2.removeRow(0)
+        while self.table_widget.rowCount() > 0:
+            self.table_widget.removeRow(0)
         self.plot_widget.clear()
 
     def error_box(self, message) -> None:
