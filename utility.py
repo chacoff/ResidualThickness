@@ -14,7 +14,7 @@ class Methods(object):
         if df.shape[1] > 9:
             n = df.shape[1] - 9
             df.drop(columns=df.columns[-n:], axis=1,  inplace=True)
-        df.columns = ['X_Y', 'Sensor1', 'Sensor2', 'Sensor3', 'Sensor4', 'Sensor5', 'Sensor6', 'Sensor7', 'Sensor8']
+        df.columns = ['Elevation', 'Sensor1', 'Sensor2', 'Sensor3', 'Sensor4', 'Sensor5', 'Sensor6', 'Sensor7', 'Sensor8']
 
         return df
 

@@ -43,7 +43,7 @@ class CSVGraphApp(QMainWindow):
 
         self.table_widget = QTableWidget(self)
         self.table_widget.setColumnCount(2)
-        self.table_widget.setHorizontalHeaderLabels(['csv 1', 'csv 2'])
+        self.table_widget.setHorizontalHeaderLabels(['Thickness', 'Amplitude'])
         self.table_widget.verticalHeader().setVisible(False)
         self.table_widget.resizeColumnsToContents()
         self.table_widget.resizeRowsToContents()
@@ -88,10 +88,10 @@ class CSVGraphApp(QMainWindow):
         )
 
         self.plot_widget = pg.PlotWidget()
-        plot_title = '<span style="font-size: 22px; font-weight: bold; color: #FF8040;">Residual Thickness</span>'
-        self.plot_widget.setTitle(plot_title)
-        self.plot_widget.setLabel('left', 'Y')
-        self.plot_widget.setLabel('bottom', 'X')
+        self.plot_title = '<span style="font-size: 22px; font-weight: bold; color: #FF8040;">Residual Thickness:</span>'
+        self.plot_widget.setTitle(self.plot_title)
+        self.plot_widget.setLabel('left', 'Elevation [mm]')
+        self.plot_widget.setLabel('bottom', 'Thickness [mm]')
         self.plot_widget.setLabel('right', '')
         self.plot_widget.setLabel('top', '')
         self.plot_widget.showGrid(True, True)
@@ -113,10 +113,10 @@ class CSVGraphApp(QMainWindow):
         # GUI ----------
 
         self.methods = Methods()
-        self.df_csv1: pd = None
-        self.df_csv1_name: str = 'csv 1'
-        self.df_csv2: pd = None
-        self.df_csv2_name: str = 'csv 2'
+        self.df_csv1: pd = None  # csv to plot
+        self.df_csv1_name: str = 'Thickness'
+        self.df_csv2: pd = None  # csv AMP for filtering
+        self.df_csv2_name: str = 'Amplitude'
 
     def open_csv(self, action) -> None:
 
@@ -126,9 +126,11 @@ class CSVGraphApp(QMainWindow):
             return
 
         if action == 1:
+            self.df_csv1_name = QFileInfo(file_name).baseName()  # fileName() to have it with the extension
             self.read_csv_header(file_name, self.table_csv1, self.df_csv1_name, self.csv1_title)
             self.df_csv1 = self.methods.return_dataframe(file_name, skip=47)
         elif action == 2:
+            self.df_csv2_name = QFileInfo(file_name).baseName()  # fileName() to have it with the extension
             self.read_csv_header(file_name, self.table_csv2, self.df_csv2_name, self.csv2_title)
             self.df_csv2 = self.methods.return_dataframe(file_name, skip=47)
         else:
@@ -140,7 +142,6 @@ class CSVGraphApp(QMainWindow):
         """ populates tables with the header parameters from each CSV file and populate the table
          with buttons to drop columns of every csv """
 
-        _name = QFileInfo(_file).baseName()  # fileName() to have it with the extension
         _qtitle.setText(_name)
         _header = self.methods.read_csv_header(_file, limit_row=46, titles=[0, 34, 42])
         self.populate_table(_table, _header, _file)
@@ -164,10 +165,12 @@ class CSVGraphApp(QMainWindow):
     def populate_dropping_buttons(self) -> None:
         """" populate the table with the buttons to drop tables """
         if self.df_csv1 is not None and self.df_csv2 is not None:
-            self.table_widget.setHorizontalHeaderLabels([self.df_csv1_name, self.df_csv2_name])
+            # self.table_widget.setHorizontalHeaderLabels([self.df_csv1_name, self.df_csv2_name])
             self.table_widget.setRowCount(self.max_rows_to_drop())
             self.buttons_fillers(self.df_csv1, 0)
             self.buttons_fillers(self.df_csv2, 1)
+            self.plot_title = f'<span style="font-size: 22px; font-weight: bold; color: #FF8040;">Residual Thickness: {self.df_csv1_name}</span>'
+            self.plot_widget.setTitle(self.plot_title)
 
     def buttons_fillers(self, _dataframe: pd, _col: int):
         for row_idx, column in enumerate(_dataframe.columns):
@@ -201,15 +204,18 @@ class CSVGraphApp(QMainWindow):
         print(self.df_csv1.shape)
         print(self.df_csv2.shape)
 
-        x_1 = self.df_csv1.Sensor4
-        y_1 = self.df_csv2.Sensor4
+        y = self.df_csv1.Elevation
 
-        x_2 = self.df_csv1.Sensor5
-        y_2 = self.df_csv2.Sensor5
+        x_1 = self.df_csv1.Sensor3
+        x_2 = self.df_csv1.Sensor4
+        x_3 = self.df_csv1.Sensor5
+        x_4 = self.df_csv1.Sensor6
 
         self.plot_widget.clear()
-        self.plot_widget.plot(x_1, y_1, pen=pg.mkPen(QColor(249, 127, 63), width=2))
-        self.plot_widget.plot(x_2, y_2, pen=pg.mkPen(QColor(49, 127, 243), width=2))
+        self.plot_widget.plot(x_1, y, pen=pg.mkPen(QColor(249, 127, 63), width=2))
+        self.plot_widget.plot(x_2, y, pen=pg.mkPen(QColor(49, 127, 243), width=2))
+        self.plot_widget.plot(x_3, y, pen=pg.mkPen(QColor(29, 277, 93), width=2))
+        self.plot_widget.plot(x_4, y, pen=pg.mkPen(QColor(29, 877, 93), width=2))
 
     def clear_plot(self) -> None:
         self.df_csv1 = None
