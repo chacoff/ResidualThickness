@@ -2,7 +2,7 @@ import pandas as pd
 import sys
 import csv
 import numpy as np
-
+import random
 
 class Methods(object):
 
@@ -44,3 +44,35 @@ class Methods(object):
                 row_count += 1
 
         return csv_header_data
+    
+    @staticmethod
+    def apply_filter(df1: pd, df2: pd, low_filter: float, high_filter: float, saturation: float):
+
+        mask1 = df2.iloc[:, 1:] == saturation
+        mask2 = df2.iloc[:, 1:] <= low_filter  # all below is NaN
+        mask3 = df2.iloc[:, 1:] >= high_filter  # all above is NaN
+
+        mask = mask1 | mask2 | mask3
+
+        common_indices = df1.index.intersection(mask.index)
+        common_columns = df1.columns.intersection(mask.columns)
+
+        # Replace corresponding cells in df1 with NaN according mask
+        df1.loc[common_indices, common_columns] = df1.loc[common_indices, common_columns].where(~mask)
+
+        return df1
+
+    @staticmethod
+    def add_new_filter():
+        pass
+    
+    @staticmethod
+    def remove_filter():
+        pass
+
+    @staticmethod
+    def generate_color():
+        random_values = [random.randint(0, 255) for _ in range(3)]
+        color = random_values + [200]
+
+        return color

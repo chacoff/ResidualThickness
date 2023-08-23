@@ -1,9 +1,9 @@
 import sys
 import csv
 from PyQt6.QtWidgets import QApplication, QMainWindow, QFileDialog, QPushButton, QVBoxLayout, QHBoxLayout, QWidget, \
-    QMessageBox, QLabel, QGridLayout, QTableWidget, QHeaderView, QTableWidgetItem
+    QMessageBox, QLabel, QGridLayout, QTableWidget, QHeaderView, QTableWidgetItem, QLineEdit
 from PyQt6.QtCore import Qt, QSize, QFileInfo
-from PyQt6.QtGui import QAction, QColor, QIcon, QPixmap, QFont
+from PyQt6.QtGui import QAction, QColor, QIcon, QPixmap, QFont, QIntValidator
 from pyqtgraph.Qt import QtGui
 import pyqtgraph as pg
 import qdarktheme
@@ -49,14 +49,34 @@ class CSVGraphApp(QMainWindow):
         self.table_widget.resizeRowsToContents()
         self.table_widget.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeMode.Stretch)
 
+        # TODO ----
+        label_low = QLabel('Low Filter:')
+        self.low_filter = QLineEdit()
+        self.low_filter.setMaxLength(3)  # Set maximum length to 3 characters
+        self.low_filter.setValidator(QIntValidator())  # Allow only integer input
+        self.low_filter.setText('50')
+        label_high = QLabel('High Filter:')
+        self.high_filter = QLineEdit()
+        self.high_filter.setMaxLength(3)
+        self.high_filter.setValidator(QIntValidator())
+        self.high_filter.setText('99')
+        # TODO ----
+
         self.left_panel.setAlignment(Qt.AlignmentFlag.AlignTop)
         self.left_panel.setContentsMargins(8, 30, 8, 8)
 
-        self.left_panel.addWidget(self.csv1_title, 0, 0)
-        self.left_panel.addWidget(self.table_csv1, 1, 0)
-        self.left_panel.addWidget(self.csv2_title, 2, 0)
-        self.left_panel.addWidget(self.table_csv2, 3, 0)
-        self.left_panel.addWidget(self.table_widget, 4, 0)
+        self.left_panel.addWidget(self.csv1_title, 0, 0, 1, 2)
+        self.left_panel.addWidget(self.table_csv1, 1, 0, 1, 2)
+        self.left_panel.addWidget(self.csv2_title, 2, 0, 1, 2)
+        self.left_panel.addWidget(self.table_csv2, 3, 0, 1, 2)
+        self.left_panel.addWidget(self.table_widget, 4, 0, 1, 2)
+
+        # TODO ----
+        self.left_panel.addWidget(label_low, 5, 0)
+        self.left_panel.addWidget(self.low_filter, 5, 1)
+        self.left_panel.addWidget(label_high, 6, 0)
+        self.left_panel.addWidget(self.high_filter, 6, 1)
+        # TODO ----
 
         w_left_panel = QWidget()
         w_left_panel.setLayout(self.left_panel)
@@ -96,7 +116,7 @@ class CSVGraphApp(QMainWindow):
         self.plot_widget.setLabel('top', '')
         self.plot_widget.showGrid(True, True)
         right_panel.setAlignment(Qt.AlignmentFlag.AlignTop)
-        right_panel.setContentsMargins(0, 8, 36, 8)
+        right_panel.setContentsMargins(0, 8, 36, 0)
 
         right_panel.addWidget(self.plot_widget)
         right_panel.addWidget(toolbar)
@@ -173,6 +193,7 @@ class CSVGraphApp(QMainWindow):
             self.plot_widget.setTitle(self.plot_title)
 
     def buttons_fillers(self, _dataframe: pd, _col: int):
+        """ generate the buttons to drop tables """
         for row_idx, column in enumerate(_dataframe.columns):
             drop_button = QPushButton(f'Drop {column}', self)
             drop_button.clicked.connect(lambda checked, col=column: self.drop_column(col, _dataframe))
@@ -185,7 +206,7 @@ class CSVGraphApp(QMainWindow):
         if column in _dataframe.columns:
             _dataframe.drop(columns=column, inplace=True, axis=1)
             self.update_dropping_buttons(self.df_csv1, self.df_csv2)
-            print(_dataframe)
+            # print(_dataframe)
 
     def update_dropping_buttons(self, _csv1: pd, _csv2: pd):
         self.table_widget.clearContents()
@@ -201,21 +222,28 @@ class CSVGraphApp(QMainWindow):
                            'Pay attention you might need to load 2 csv before attempting to plot.')
             return
 
-        print(self.df_csv1.shape)
-        print(self.df_csv2.shape)
-
+        self.plot_widget.clear()
         y = self.df_csv1.Elevation
 
-        x_1 = self.df_csv1.Sensor3
-        x_2 = self.df_csv1.Sensor4
-        x_3 = self.df_csv1.Sensor5
-        x_4 = self.df_csv1.Sensor6
+        filtered_thickness = self.methods.apply_filter(self.df_csv1.copy(),
+                                                       self.df_csv2.copy(),
+                                                       low_filter=float(self.low_filter.text()),
+                                                       high_filter=float(self.high_filter.text()),
+                                                       saturation=100)
 
-        self.plot_widget.clear()
-        self.plot_widget.plot(x_1, y, pen=pg.mkPen(QColor(249, 127, 63), width=2))
-        self.plot_widget.plot(x_2, y, pen=pg.mkPen(QColor(49, 127, 243), width=2))
-        self.plot_widget.plot(x_3, y, pen=pg.mkPen(QColor(29, 277, 93), width=2))
-        self.plot_widget.plot(x_4, y, pen=pg.mkPen(QColor(29, 877, 93), width=2))
+        try:
+            for name, series in filtered_thickness.items():
+                print(name)
+                if name != 'Elevation':
+                    x_1 = filtered_thickness[name]
+                    # self.plot_widget.plot(x_1, y, pen=pg.mkPen(QColor(249, 127, 63), width=2))
+                    color = pg.mkBrush(self.methods.generate_color())
+                    scatter_plot = pg.ScatterPlotItem(size=6, pen=pg.mkPen(None), brush=color)
+                    scatter_plot.setData(x=x_1, y=y)
+                    self.plot_widget.addItem(scatter_plot)
+
+        except AttributeError as e:
+            print(e)
 
     def clear_plot(self) -> None:
         self.df_csv1 = None
