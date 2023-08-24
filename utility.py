@@ -3,6 +3,8 @@ import sys
 import csv
 import numpy as np
 import random
+from PyQt6.QtWidgets import QWidget, QVBoxLayout
+import pyqtgraph as pg
 
 
 class Methods(object):
@@ -82,3 +84,19 @@ class Methods(object):
     @staticmethod
     def generate_color():
         return [random.randint(0, 255) for _ in range(3)]
+
+
+class SecondGraphWindow(QWidget):
+    def __init__(self, x, y):
+        super().__init__()
+
+        self.setWindowTitle("Second Graph")
+        self.setGeometry(100, 100, 600, 400)
+
+        layout = QVBoxLayout()
+        self.setLayout(layout)
+
+        plot_widget = pg.PlotWidget()
+        layout.addWidget(plot_widget)
+
+        plot_widget.plot(x, y)

@@ -1,17 +1,15 @@
 import sys
 import csv
 from PyQt6.QtWidgets import QApplication, QMainWindow, QFileDialog, QPushButton, QVBoxLayout, QHBoxLayout, QWidget, \
-    QMessageBox, QLabel, QGridLayout, QTableWidget, QHeaderView, QTableWidgetItem, QLineEdit
+    QMessageBox, QLabel, QGridLayout, QTableWidget, QHeaderView, QTableWidgetItem, QLineEdit, QComboBox, QMdiSubWindow
 from PyQt6.QtCore import Qt, QSize, QFileInfo, QPointF
 from PyQt6.QtGui import QAction, QColor, QIcon, QPixmap, QFont, QIntValidator
 from pyqtgraph.Qt import QtGui
 import pyqtgraph as pg
 import qdarktheme
 import pandas as pd
-from scipy import stats
 import numpy as np
-from utility import Methods
-from scipy import stats
+from utility import Methods, SecondGraphWindow
 
 
 class CSVGraphApp(QMainWindow):
@@ -40,7 +38,7 @@ class CSVGraphApp(QMainWindow):
         # Right Panel
         self.right_panel = QGridLayout()
         self.csv1_title = QLabel(' ')
-        self.csv1_title.setStyleSheet('''QLabel {font-size: 16px; font-weight: bold; color: #606060;}''')
+        self.csv1_title.setStyleSheet('''QLabel {font-size: 14px; font-weight: bold; color: #606060;}''')
         self.table_csv1 = QTableWidget()
         self.table_csv1.setColumnCount(2)
         self.table_csv1.setHorizontalHeaderLabels(['Type', 'Value'])
@@ -49,7 +47,7 @@ class CSVGraphApp(QMainWindow):
         self.table_csv1.resizeRowsToContents()
         self.table_csv1.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeMode.Stretch)
         self.csv2_title = QLabel(' ')
-        self.csv2_title.setStyleSheet('''QLabel {font-size: 16px; font-weight: bold; color: #606060;}''')
+        self.csv2_title.setStyleSheet('''QLabel {font-size: 14px; font-weight: bold; color: #606060;}''')
         self.table_csv2 = QTableWidget()
         self.table_csv2.setColumnCount(2)
         self.table_csv2.setHorizontalHeaderLabels(['Type', 'Value'])
@@ -79,7 +77,7 @@ class CSVGraphApp(QMainWindow):
         self.table_widget.resizeRowsToContents()
         self.table_widget.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeMode.Stretch)
         plot_configs = QLabel('Plot settings:')
-        plot_configs.setStyleSheet('''QLabel {font-size: 16px; font-weight: bold; color: #606060;}''')
+        plot_configs.setStyleSheet('''QLabel {font-size: 14px; font-weight: bold; color: #606060;}''')
         label_low = QLabel('Low Filter:')
         self.low_filter = QLineEdit()
         self.low_filter.setMaxLength(2)  # Set maximum length to 4 characters
@@ -115,6 +113,10 @@ class CSVGraphApp(QMainWindow):
         self.y_max.setMaxLength(8)
         self.y_max.setValidator(QIntValidator())
         self.y_max.setText('1000')
+        label_checkbox = QLabel('Choose a Sensor to plot:')
+        label_checkbox.setStyleSheet('''QLabel {font-size: 14px; font-weight: bold; color: #606060;}''')
+        self.column_checkbox = QComboBox()
+        self.column_checkbox.currentIndexChanged.connect(self.selection_column_checkbox)
 
         self.left_panel.setAlignment(Qt.AlignmentFlag.AlignTop)
         self.left_panel.setContentsMargins(0, 8, 0, 0)
@@ -141,7 +143,9 @@ class CSVGraphApp(QMainWindow):
         self.left_panel.addWidget(label_y_max, 7, 0)
         self.left_panel.addWidget(self.y_max, 7, 1)
         self.left_panel.addWidget(QLabel('[mm]'), 7, 2)
-        self.left_panel.addWidget(self.table_widget, 8, 0, 1, 3)
+        # self.left_panel.addWidget(self.table_widget, 8, 0, 1, 3)
+        self.left_panel.addWidget(label_checkbox, 8, 0, 1, 3)
+        self.left_panel.addWidget(self.column_checkbox, 9, 0, 1, 3)
         # self.left_panel.setRowStretch(5, 1)
 
         w_left_panel = QWidget()
@@ -232,7 +236,8 @@ class CSVGraphApp(QMainWindow):
         else:
             self.error_box('No implementation')
 
-        self.populate_dropping_buttons()
+        self.populate_checkbox()
+        # self.populate_dropping_buttons()
 
     def read_csv_header(self, _file: str, _table: QTableWidget, _name: str, _qtitle: QLabel) -> None:
         """ populates tables with the header parameters from each CSV file and populate the table
@@ -242,7 +247,7 @@ class CSVGraphApp(QMainWindow):
         _header = self.methods.read_csv_header(_file, limit_row=46, titles=[0, 34, 42])
         self.populate_table(_table, _header, _file)
 
-    def populate_table(self, _table_widget: QTableWidget, _data: pd, _csv: str):
+    def populate_table(self, _table_widget: QTableWidget, _data: pd, _csv: str) -> None:
         """" populate table_csv1 and table_csv2 """
 
         _table_widget.setRowCount(len(_data))
@@ -258,39 +263,17 @@ class CSVGraphApp(QMainWindow):
 
         self.statusBar().showMessage(f"Loaded rows from {_csv}")
 
-    def populate_dropping_buttons(self) -> None:
-        """" populate the table with the buttons to drop tables """
+    def populate_checkbox(self) -> None:
         if self.df_csv1 is not None and self.df_csv2 is not None:
-            # self.table_widget.setHorizontalHeaderLabels([self.df_csv1_name, self.df_csv2_name])
-            self.table_widget.setRowCount(self.max_rows_to_drop())
-            self.buttons_fillers(self.df_csv1, 0)
-            self.buttons_fillers(self.df_csv2, 1)
+            checkbox_items = []
+            for row_idx, column in enumerate(self.df_csv1.columns):
+                if column != 'Elevation':
+                    checkbox_items.append(column)
+            self.column_checkbox.addItems(checkbox_items)
 
-    def buttons_fillers(self, _dataframe: pd, _col: int):
-        """ generate the buttons to drop tables """
-        for row_idx, column in enumerate(_dataframe.columns):
-            if column == 'Elevation':
-                drop_button = QPushButton(f'{column}', self)
-            else:
-                drop_button = QPushButton(f'drop {column}', self)
-                drop_button.clicked.connect(lambda checked, col=column: self.drop_column(col, _dataframe))
-            self.table_widget.setCellWidget(row_idx, _col, drop_button)
-
-    def max_rows_to_drop(self) -> int:
-        return max(self.df_csv1.shape[1], self.df_csv2.shape[1])
-
-    def drop_column(self, column, _dataframe):
-        if column in _dataframe.columns:
-            if column != 'Elevation':
-                _dataframe.drop(columns=column, inplace=True, axis=1)
-                self.update_dropping_buttons(self.df_csv1, self.df_csv2)
-                # print(_dataframe)
-
-    def update_dropping_buttons(self, _csv1: pd, _csv2: pd):
-        self.table_widget.clearContents()
-        self.table_widget.setRowCount(self.max_rows_to_drop())
-        self.buttons_fillers(_csv1, 0)
-        self.buttons_fillers(_csv2, 1)
+    def selection_column_checkbox(self) -> str:
+        selected_item = self.column_checkbox.currentText()
+        return selected_item
 
     def plot_data(self) -> None:
 
@@ -302,49 +285,47 @@ class CSVGraphApp(QMainWindow):
 
         self.plot_widget.clear()
         self.header_title.setText(f'Residual Thickness: {self.df_csv1_name}')
-        y = self.df_csv1.Elevation
 
-        filtered_thickness = self.methods.apply_filter(self.df_csv1.copy(),
-                                                       self.df_csv2.copy(),
+        columns_to_keep = ['Elevation', self.selection_column_checkbox()]
+        df_thickness = self.df_csv1.copy()
+        df_amplitude = self.df_csv2.copy()
+
+        df_thickness = df_thickness[columns_to_keep]
+        df_amplitude = df_amplitude[columns_to_keep]
+
+        y = df_thickness.Elevation
+
+        filtered_thickness = self.methods.apply_filter(df_thickness,
+                                                       df_amplitude,
                                                        low_filter=float(self.low_filter.text()),
                                                        high_filter=float(self.high_filter.text()),
                                                        saturation=100)
 
-        # self.plot_widget.plot(x_1, y, pen=pg.mkPen(QColor(249, 127, 63), width=2))
+        color = self.methods.generate_color()
 
-        try:
-            for name, series in filtered_thickness.items():
-                color = self.methods.generate_color()
-                if name != 'Elevation':
-                    x_1 = filtered_thickness[name]
+        x_1 = filtered_thickness[self.selection_column_checkbox()]
 
-                    average_by_interval = self.methods.average_by_intervals(_x=x_1,
-                                                                            _y=y,
-                                                                            interval=int(self.bin_filter.text()),
-                                                                            min_elevation=-10000)
+        average_by_interval = self.methods.average_by_intervals(_x=x_1,
+                                                                _y=y,
+                                                                interval=int(self.bin_filter.text()),
+                                                                min_elevation=-10000)
 
-                    self.average_data = average_by_interval.values.tolist()
+        self.average_data = average_by_interval.values.tolist()
 
-                    scatter_plot = pg.ScatterPlotItem(size=2, pen=pg.mkPen(None), brush=pg.mkBrush(color+[65]))
-                    scatter_plot.setData(x=x_1, y=y)
+        scatter_plot = pg.ScatterPlotItem(size=2, pen=pg.mkPen(None), brush=pg.mkBrush(color+[65]))
+        scatter_plot.setData(x=x_1, y=y)
 
-                    self.plot_widget.addItem(scatter_plot)
+        self.plot_widget.addItem(scatter_plot)
 
-                    scatter_average = pg.ScatterPlotItem(size=12, pen=pg.mkPen(None), brush=pg.mkBrush(color+[220]))
-                    scatter_average.setData(x=average_by_interval.x, y=average_by_interval.elevation_bin)
+        scatter_average = pg.ScatterPlotItem(size=12, pen=pg.mkPen(None), brush=pg.mkBrush(color+[220]))
+        scatter_average.setData(x=average_by_interval.x, y=average_by_interval.elevation_bin)
 
-                    self.plot_widget.addItem(scatter_average)
+        self.plot_widget.addItem(scatter_average)
 
-                    self.plot_widget.plotItem.vb.setLimits(xMin=int(self.x_min.text()),
-                                                           xMax=int(self.x_max.text()),
-                                                           yMin=int(self.y_min.text()),
-                                                           yMax=int(self.y_max.text()))
-
-        except AttributeError as e:
-            print(e)
-
-        except ValueError as e:
-            print(e)
+        self.plot_widget.plotItem.vb.setLimits(xMin=int(self.x_min.text()),
+                                               xMax=int(self.x_max.text()),
+                                               yMin=int(self.y_min.text()),
+                                               yMax=int(self.y_max.text()))
 
     def plot_clicked(self, event):
         """ gets the nearest average point on scene """
@@ -373,6 +354,7 @@ class CSVGraphApp(QMainWindow):
         self.df_csv2 = None
         self.csv1_title.setText(' ')
         self.csv2_title.setText(' ')
+        self.column_checkbox.clear()
         while self.table_csv1.rowCount() > 0:
             self.table_csv1.removeRow(0)
         while self.table_csv2.rowCount() > 0:
@@ -388,6 +370,41 @@ class CSVGraphApp(QMainWindow):
         dlg.setWindowFlags(self.windowFlags() | Qt.WindowType.FramelessWindowHint)
         dlg.setText(message)
         dlg.exec()
+
+    # ---- methods not used since we no longer drop columns >> kept for awhile
+    def populate_dropping_buttons(self) -> None:
+        """" populate the table with the buttons to drop tables """
+        if self.df_csv1 is not None and self.df_csv2 is not None:
+            # self.table_widget.setHorizontalHeaderLabels([self.df_csv1_name, self.df_csv2_name])
+            self.table_widget.setRowCount(self.max_rows_to_drop())
+            self.buttons_fillers(self.df_csv1, 0)
+            self.buttons_fillers(self.df_csv2, 1)
+
+    def update_dropping_buttons(self, _csv1: pd, _csv2: pd):
+        self.table_widget.clearContents()
+        self.table_widget.setRowCount(self.max_rows_to_drop())
+        self.buttons_fillers(_csv1, 0)
+        self.buttons_fillers(_csv2, 1)
+
+    def max_rows_to_drop(self) -> int:
+        return max(self.df_csv1.shape[1], self.df_csv2.shape[1])
+
+    def drop_column(self, column, _dataframe):
+        if column in _dataframe.columns:
+            if column != 'Elevation':
+                _dataframe.drop(columns=column, inplace=True, axis=1)
+                self.update_dropping_buttons(self.df_csv1, self.df_csv2)
+                # print(_dataframe)
+
+    def buttons_fillers(self, _dataframe: pd, _col: int):
+        """ generate the buttons to drop tables """
+        for row_idx, column in enumerate(_dataframe.columns):
+            if column == 'Elevation':
+                drop_button = QPushButton(f'{column}', self)
+            else:
+                drop_button = QPushButton(f'drop {column}', self)
+                drop_button.clicked.connect(lambda checked, col=column: self.drop_column(col, _dataframe))
+            self.table_widget.setCellWidget(row_idx, _col, drop_button)
 
 
 if __name__ == "__main__":
