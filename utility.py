@@ -75,7 +75,8 @@ class Methods(object):
 
         df['elevation_bin'] = pd.cut(df['y'], bins=elevation_bins, labels=elevation_bins[:-1])
         result = df.groupby('elevation_bin')['x'].apply(lambda x: np.nanmean(x)).reset_index()
-
+        cols = ['x', 'elevation_bin']  # re-order to follow x, y
+        result = result[cols]
         return result
 
     @staticmethod

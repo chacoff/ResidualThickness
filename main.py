@@ -2,7 +2,7 @@ import sys
 import csv
 from PyQt6.QtWidgets import QApplication, QMainWindow, QFileDialog, QPushButton, QVBoxLayout, QHBoxLayout, QWidget, \
     QMessageBox, QLabel, QGridLayout, QTableWidget, QHeaderView, QTableWidgetItem, QLineEdit
-from PyQt6.QtCore import Qt, QSize, QFileInfo
+from PyQt6.QtCore import Qt, QSize, QFileInfo, QPointF
 from PyQt6.QtGui import QAction, QColor, QIcon, QPixmap, QFont, QIntValidator
 from pyqtgraph.Qt import QtGui
 import pyqtgraph as pg
@@ -177,6 +177,7 @@ class CSVGraphApp(QMainWindow):
         self.plot_widget.setLabel('right', '')
         self.plot_widget.setLabel('top', '')
         self.plot_widget.showGrid(True, True)
+        self.plot_widget.scene().sigMouseClicked.connect(self.plot_clicked)
         central_panel.setAlignment(Qt.AlignmentFlag.AlignTop)
         central_panel.setContentsMargins(0, 0, 0, 0)
 
@@ -209,10 +210,13 @@ class CSVGraphApp(QMainWindow):
         self.df_csv1_name: str = 'Thickness'
         self.df_csv2: pd = None  # csv AMP for filtering
         self.df_csv2_name: str = 'Amplitude'
+        self.average_data = []
 
     def open_csv(self, action) -> None:
 
-        file_name, _ = QFileDialog.getOpenFileName(self, "Open CSV File", "", "CSV Files (*.csv);;All Files (*)")
+        file_name, _ = QFileDialog.getOpenFileName(self,
+                                                   "Open CSV File", "./sample_data",
+                                                   "CSV Files (*.csv);;All Files (*)")
 
         if not file_name:
             return
@@ -319,6 +323,8 @@ class CSVGraphApp(QMainWindow):
                                                                             interval=int(self.bin_filter.text()),
                                                                             min_elevation=-10000)
 
+                    self.average_data = average_by_interval.values.tolist()
+
                     scatter_plot = pg.ScatterPlotItem(size=2, pen=pg.mkPen(None), brush=pg.mkBrush(color+[65]))
                     scatter_plot.setData(x=x_1, y=y)
 
@@ -339,6 +345,28 @@ class CSVGraphApp(QMainWindow):
 
         except ValueError as e:
             print(e)
+
+    def plot_clicked(self, event):
+        """ gets the nearest average point on scene """
+        if not self.average_data:
+            return
+
+        if event.double():
+            vb = self.plot_widget.plotItem.vb
+            scene_coords = event.scenePos()
+            if self.plot_widget.sceneBoundingRect().contains(scene_coords):
+                clicked_point = vb.mapSceneToView(scene_coords)
+
+            closest_distance = float('inf')
+            closest_point = None
+            for point in self.average_data:
+                distance = ((clicked_point.x() - point[0]) ** 2 + (clicked_point.y() - point[1]) ** 2) ** 0.5
+                if distance < closest_distance:
+                    closest_distance = distance
+                    closest_point = point
+
+            if closest_point:
+                print("Closest point in average_data:", closest_point[0], closest_point[1])
 
     def clear_plot(self) -> None:
         self.df_csv1 = None
@@ -368,7 +396,7 @@ if __name__ == "__main__":
     qdarktheme.setup_theme('light')  # 'light' option
     pg.setConfigOption('background', QColor(248, 249, 250))
     pg.setConfigOption('foreground', 'k')
-    image_window = CSVGraphApp(' T_Logiciel - RD-Esch v0.0.1')
+    image_window = CSVGraphApp(' ResidualThickness - RDEsch v0.0.2j')
     image_window.setWindowIcon(QIcon(r'icons/bar-graph.png'))
     image_window.show()
     image_window.showMaximized()
