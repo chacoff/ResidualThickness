@@ -4,6 +4,7 @@ import csv
 import numpy as np
 import random
 
+
 class Methods(object):
 
     @staticmethod
@@ -49,8 +50,8 @@ class Methods(object):
     def apply_filter(df1: pd, df2: pd, low_filter: float, high_filter: float, saturation: float):
 
         mask1 = df2.iloc[:, 1:] == saturation
-        mask2 = df2.iloc[:, 1:] <= low_filter  # all below is NaN
-        mask3 = df2.iloc[:, 1:] >= high_filter  # all above is NaN
+        mask2 = df2.iloc[:, 1:] <= low_filter  # all below is True, i.e., afterwards NaN
+        mask3 = df2.iloc[:, 1:] >= high_filter  # all above is True, i.e., afterwards NaN
 
         mask = mask1 | mask2 | mask3
 
@@ -63,16 +64,20 @@ class Methods(object):
         return df1
 
     @staticmethod
-    def add_new_filter():
-        pass
-    
-    @staticmethod
-    def remove_filter():
-        pass
+    def average_by_intervals(_x: list, _y: list, interval: int, min_elevation: int) -> pd:
+        """ returns a new panda dataframe containing only the average according an interval"""
+        data = {'x': _x,
+                'y': _y}
+
+        df = pd.DataFrame(data)
+
+        elevation_bins = list(range(min_elevation, 0 + interval, interval))
+
+        df['elevation_bin'] = pd.cut(df['y'], bins=elevation_bins, labels=elevation_bins[:-1])
+        result = df.groupby('elevation_bin')['x'].apply(lambda x: np.nanmean(x)).reset_index()
+
+        return result
 
     @staticmethod
     def generate_color():
-        random_values = [random.randint(0, 255) for _ in range(3)]
-        color = random_values + [200]
-
-        return color
+        return [random.randint(0, 255) for _ in range(3)]
