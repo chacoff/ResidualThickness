@@ -107,13 +107,13 @@ class CSVGraphApp(QMainWindow):
         self.y_min = QLineEdit()
         self.y_min.setMaxLength(8)
         self.y_min.setValidator(QIntValidator())
-        self.y_min.setText('-11000')
+        self.y_min.setText('-10500')
         label_y_max = QLabel('Y max:')
         self.y_max = QLineEdit()
         self.y_max.setMaxLength(8)
         self.y_max.setValidator(QIntValidator())
-        self.y_max.setText('1000')
-        label_checkbox = QLabel('Choose a Sensor to plot:')
+        self.y_max.setText('0')
+        label_checkbox = QLabel('Sensor to plot:')
         label_checkbox.setStyleSheet('''QLabel {font-size: 14px; font-weight: bold; color: #606060;}''')
         self.column_checkbox = QComboBox()
         self.column_checkbox.currentIndexChanged.connect(self.selection_column_checkbox)
@@ -210,10 +210,11 @@ class CSVGraphApp(QMainWindow):
         # GUI ----------
 
         self.methods = Methods()
-        self.df_csv1: pd = None  # csv to plot
+        self.df_csv1: pd = None  # csv thickness to plot
         self.df_csv1_name: str = 'Thickness'
         self.df_csv2: pd = None  # csv AMP for filtering
         self.df_csv2_name: str = 'Amplitude'
+        self.selected_sensor: str = 'Sensor3'
         self.average_data = []
 
     def open_csv(self, action) -> None:
@@ -271,9 +272,9 @@ class CSVGraphApp(QMainWindow):
                     checkbox_items.append(column)
             self.column_checkbox.addItems(checkbox_items)
 
-    def selection_column_checkbox(self) -> str:
-        selected_item = self.column_checkbox.currentText()
-        return selected_item
+    def selection_column_checkbox(self) -> None:
+        self.selected_sensor = self.column_checkbox.currentText()
+        self.plot_data()
 
     def plot_data(self) -> None:
 
@@ -286,7 +287,7 @@ class CSVGraphApp(QMainWindow):
         self.plot_widget.clear()
         self.header_title.setText(f'Residual Thickness: {self.df_csv1_name}')
 
-        columns_to_keep = ['Elevation', self.selection_column_checkbox()]
+        columns_to_keep = ['Elevation', self.selected_sensor]
         df_thickness = self.df_csv1.copy()
         df_amplitude = self.df_csv2.copy()
 
@@ -303,7 +304,7 @@ class CSVGraphApp(QMainWindow):
 
         color = self.methods.generate_color()
 
-        x_1 = filtered_thickness[self.selection_column_checkbox()]
+        x_1 = filtered_thickness[self.selected_sensor]
 
         average_by_interval = self.methods.average_by_intervals(_x=x_1,
                                                                 _y=y,
