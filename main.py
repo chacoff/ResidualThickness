@@ -358,6 +358,7 @@ class CSVGraphApp(QMainWindow):
 
                 if closest_point:
                     print("Closest point in average_data:", closest_point[0], closest_point[1])
+                    self.plot_widget.clear()
 
     def mouse_moved(self, event) -> None:
 
