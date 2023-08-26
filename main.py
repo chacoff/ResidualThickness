@@ -354,15 +354,21 @@ class CSVGraphApp(QMainWindow):
                     print("Closest point in average_data:", closest_point[0], closest_point[1])
 
     def mouse_moved(self, event):
+
+        if not self.average_data:
+            return
+
         mouse_point = self.plot_widget.getViewBox().mapSceneToView(event)
-        x, y = mouse_point.x(), mouse_point.y()
 
-        closest_point = self.methods.closest_point(x, y, self.average_data)
-        print(closest_point)
+        closest_point = self.methods.closest_point(mouse_point.x(), mouse_point.y(), self.average_data)
 
-        if closest_point:
-            self.hover_label.setText(f"    X: {x:.2f}, Y: {y:.2f}")
-            self.hover_label.setPos(x, y)
+        if self.methods.absolute_point_distance([mouse_point.x(), mouse_point.y()], closest_point):
+            self.plot_widget.removeItem(self.hover_label)
+            self.plot_widget.addItem(self.hover_label)
+            self.hover_label.setText(f"    {closest_point}")
+            self.hover_label.setPos(mouse_point.x(), mouse_point.y())
+        else:
+            self.plot_widget.removeItem(self.hover_label)
 
     def clear_plot(self) -> None:
         self.df_csv1 = None

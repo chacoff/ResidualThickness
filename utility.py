@@ -5,6 +5,7 @@ import numpy as np
 import random
 from PyQt6.QtWidgets import QWidget, QVBoxLayout
 import pyqtgraph as pg
+import math
 
 
 class Methods(object):
@@ -96,6 +97,16 @@ class Methods(object):
                 closest_point = point
 
         return closest_point
+
+    @staticmethod
+    def distance_to_point(a: list, b: list) -> int:
+        return int(math.dist(a, b))
+
+    @staticmethod
+    def absolute_point_distance(a: list, b: list) -> bool:
+        thresh = [0.10, 70]
+        diff1 = [abs(a[0] - b[0]), abs(a[1] - b[1])]
+        return diff1[0] < thresh[0] and diff1[1] < thresh[1]
 
 
 class SecondGraphWindow(QWidget):
