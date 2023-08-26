@@ -176,11 +176,13 @@ class CSVGraphApp(QMainWindow):
         )
 
         self.plot_widget = pg.PlotWidget()
+        self.hover_label = pg.TextItem()
         self.plot_widget.setLabel('left', 'Elevation [mm]')
         self.plot_widget.setLabel('bottom', 'Thickness [mm]')
         self.plot_widget.setLabel('right', '')
         self.plot_widget.setLabel('top', '')
         self.plot_widget.showGrid(True, True)
+        self.plot_widget.scene().sigMouseMoved.connect(self.mouse_moved)
         self.plot_widget.scene().sigMouseClicked.connect(self.plot_clicked)
         central_panel.setAlignment(Qt.AlignmentFlag.AlignTop)
         central_panel.setContentsMargins(0, 0, 0, 0)
@@ -284,7 +286,10 @@ class CSVGraphApp(QMainWindow):
                            'Pay attention you might need to load 2 csv before attempting to plot.')
             return
 
+        self.plot_widget.removeItem(self.hover_label)
+
         self.plot_widget.clear()
+        self.plot_widget.addItem(self.hover_label)
         self.header_title.setText(f'Residual Thickness: {self.df_csv1_name}')
 
         columns_to_keep = ['Elevation', self.selected_sensor]
@@ -330,25 +335,34 @@ class CSVGraphApp(QMainWindow):
 
     def plot_clicked(self, event):
         """ gets the nearest average point on scene """
+
         if not self.average_data:
             return
 
         if event.double():
             vb = self.plot_widget.plotItem.vb
             scene_coords = event.scenePos()
+
             if self.plot_widget.sceneBoundingRect().contains(scene_coords):
                 clicked_point = vb.mapSceneToView(scene_coords)
 
-            closest_distance = float('inf')
-            closest_point = None
-            for point in self.average_data:
-                distance = ((clicked_point.x() - point[0]) ** 2 + (clicked_point.y() - point[1]) ** 2) ** 0.5
-                if distance < closest_distance:
-                    closest_distance = distance
-                    closest_point = point
+                closest_point = self.methods.closest_point(clicked_point.x(),
+                                                           clicked_point.y(),
+                                                           self.average_data)
 
-            if closest_point:
-                print("Closest point in average_data:", closest_point[0], closest_point[1])
+                if closest_point:
+                    print("Closest point in average_data:", closest_point[0], closest_point[1])
+
+    def mouse_moved(self, event):
+        mouse_point = self.plot_widget.getViewBox().mapSceneToView(event)
+        x, y = mouse_point.x(), mouse_point.y()
+
+        closest_point = self.methods.closest_point(x, y, self.average_data)
+        print(closest_point)
+
+        if closest_point:
+            self.hover_label.setText(f"    X: {x:.2f}, Y: {y:.2f}")
+            self.hover_label.setPos(x, y)
 
     def clear_plot(self) -> None:
         self.df_csv1 = None
@@ -372,7 +386,7 @@ class CSVGraphApp(QMainWindow):
         dlg.setText(message)
         dlg.exec()
 
-    # ---- methods not used since we no longer drop columns >> kept for awhile
+    # ---- methods not used since we no longer drop columns >> kept for a while
     def populate_dropping_buttons(self) -> None:
         """" populate the table with the buttons to drop tables """
         if self.df_csv1 is not None and self.df_csv2 is not None:

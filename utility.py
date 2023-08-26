@@ -85,6 +85,18 @@ class Methods(object):
     def generate_color():
         return [random.randint(0, 255) for _ in range(3)]
 
+    @staticmethod
+    def closest_point(x: float, y: float, average_data: list) -> list:
+        closest_distance = float('inf')
+        closest_point = None
+        for point in average_data:
+            distance = ((x - point[0]) ** 2 + (y - point[1]) ** 2) ** 0.5
+            if distance < closest_distance:
+                closest_distance = distance
+                closest_point = point
+
+        return closest_point
+
 
 class SecondGraphWindow(QWidget):
     def __init__(self, x, y):
