@@ -223,7 +223,8 @@ class CSVGraphApp(QMainWindow):
         self.df_csv2: pd = None  # csv AMP for filtering
         self.df_csv2_name: str = 'Amplitude'
         self.selected_sensor: str = 'Sensor3'
-        self.average_data = []
+        self.average_data: list = []
+        self.for_histo: list = []
 
     def open_csv(self, action) -> None:
 
@@ -323,6 +324,7 @@ class CSVGraphApp(QMainWindow):
                                                                 min_elevation=-10000)
 
         self.average_data = average_by_interval.values.tolist()
+        self.for_histo = [x_1.values.tolist(), y.values.tolist()]
 
         scatter_plot = pg.ScatterPlotItem(size=2, pen=pg.mkPen(None), brush=pg.mkBrush(color+[64]))
         scatter_plot.setData(x=x_1, y=y)
@@ -358,7 +360,11 @@ class CSVGraphApp(QMainWindow):
 
                 if closest_point:
                     print("Closest point in average_data:", closest_point[0], closest_point[1])
-                    self.plot_widget.clear()
+                    df_histo = pd.DataFrame({'x': self.for_histo[0], 'y': self.for_histo[1]})
+                    df_histo = df_histo[df_histo['x'].notna()]  # remove NaN
+                    _range = (closest_point[1], closest_point[1]+int(self.bin_filter.text()))  # lower, upper
+                    df_histo = df_histo[(df_histo['y'] >= _range[0]) & (df_histo['y'] <= _range[1])]
+                    self.plot_histogram(df_histo)
 
     def mouse_moved(self, event) -> None:
 
@@ -381,6 +387,23 @@ class CSVGraphApp(QMainWindow):
             self.hover_label.setPos(mouse_point.x(), mouse_point.y())
         else:
             self.plot_widget.removeItem(self.hover_label)
+
+    def plot_histogram(self, data: np):
+        print(data)
+        hist = np.histogram(data.x, bins=30)
+
+        self.plot_widget.clear()
+        self.plot_widget.addLegend()
+
+        # Plotting histogram bars
+        hist_curve = pg.PlotCurveItem(hist[1], hist[0], stepMode=True, fillLevel=0, brush=(0, 0, 255, 150))
+        self.plot_widget.addItem(hist_curve)
+
+        # self.plot_widget.setLabel("left", "Frequency")
+        # self.plot_widget.setLabel("bottom", "Value")
+        # self.plot_widget.setTitle("Histogram")
+        # self.plot_widget.setXRange(min(hist[1]), max(hist[1]))
+        # self.plot_widget.setYRange(0, max(hist[0]) + 10)
 
     def clear_plot(self) -> None:
         self.df_csv1 = None

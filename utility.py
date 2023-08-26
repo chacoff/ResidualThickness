@@ -50,7 +50,8 @@ class Methods(object):
         return csv_header_data
     
     @staticmethod
-    def apply_filter(df1: pd, df2: pd, low_filter: float, high_filter: float, saturation: float):
+    def apply_filter(df1: pd, df2: pd, low_filter: float, high_filter: float, saturation: float) -> pd:
+        """ returns a panda data frame with all the filters applied over the selected sensor data"""
 
         mask1 = df2.iloc[:, 1:] == saturation
         mask2 = df2.iloc[:, 1:] <= low_filter  # all below is True, i.e., afterwards NaN
