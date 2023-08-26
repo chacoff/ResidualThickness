@@ -176,7 +176,9 @@ class CSVGraphApp(QMainWindow):
         )
 
         self.plot_widget = pg.PlotWidget()
-        self.hover_label = pg.TextItem()
+        self.hover_label = pg.TextItem(anchor=(1, 0),
+                                       color=(251, 253, 255, 250),
+                                       fill=(49, 51, 53, 190))
         self.plot_widget.setLabel('left', 'Elevation [mm]')
         self.plot_widget.setLabel('bottom', 'Thickness [mm]')
         self.plot_widget.setLabel('right', '')
@@ -333,7 +335,7 @@ class CSVGraphApp(QMainWindow):
                                                yMin=int(self.y_min.text()),
                                                yMax=int(self.y_max.text()))
 
-    def plot_clicked(self, event):
+    def plot_clicked(self, event) -> None:
         """ gets the nearest average point on scene """
 
         if not self.average_data:
@@ -353,7 +355,7 @@ class CSVGraphApp(QMainWindow):
                 if closest_point:
                     print("Closest point in average_data:", closest_point[0], closest_point[1])
 
-    def mouse_moved(self, event):
+    def mouse_moved(self, event) -> None:
 
         if not self.average_data:
             return
