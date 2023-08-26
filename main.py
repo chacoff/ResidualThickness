@@ -17,6 +17,8 @@ class CSVGraphApp(QMainWindow):
         super().__init__()
 
         self.setWindowTitle(_title)
+        font = QFont()
+        font.setPixelSize(16)
 
         # GUI ----------
         main = QVBoxLayout()
@@ -178,7 +180,9 @@ class CSVGraphApp(QMainWindow):
         self.plot_widget = pg.PlotWidget()
         self.hover_label = pg.TextItem(anchor=(1, 0),
                                        color=(251, 253, 255, 250),
-                                       fill=(49, 51, 53, 190))
+                                       fill=(49, 51, 53, 190)
+                                       )
+        self.hover_label.setFont(font)
         self.plot_widget.setLabel('left', 'Elevation [mm]')
         self.plot_widget.setLabel('bottom', 'Thickness [mm]')
         self.plot_widget.setLabel('right', '')
@@ -320,16 +324,16 @@ class CSVGraphApp(QMainWindow):
 
         self.average_data = average_by_interval.values.tolist()
 
-        scatter_plot = pg.ScatterPlotItem(size=2, pen=pg.mkPen(None), brush=pg.mkBrush(color+[65]))
+        scatter_plot = pg.ScatterPlotItem(size=2, pen=pg.mkPen(None), brush=pg.mkBrush(color+[64]))
         scatter_plot.setData(x=x_1, y=y)
-
-        self.plot_widget.addItem(scatter_plot)
 
         scatter_average = pg.ScatterPlotItem(size=12, pen=pg.mkPen(None), brush=pg.mkBrush(color+[220]))
         scatter_average.setData(x=average_by_interval.x, y=average_by_interval.elevation_bin)
 
+        self.plot_widget.addItem(scatter_plot)
         self.plot_widget.addItem(scatter_average)
 
+        # general settings for view the plot
         self.plot_widget.plotItem.vb.setLimits(xMin=int(self.x_min.text()),
                                                xMax=int(self.x_max.text()),
                                                yMin=int(self.y_min.text()),
@@ -362,12 +366,17 @@ class CSVGraphApp(QMainWindow):
 
         mouse_point = self.plot_widget.getViewBox().mapSceneToView(event)
 
-        closest_point = self.methods.closest_point(mouse_point.x(), mouse_point.y(), self.average_data)
+        point = self.methods.closest_point(mouse_point.x(), mouse_point.y(), self.average_data)
 
-        if self.methods.absolute_point_distance([mouse_point.x(), mouse_point.y()], closest_point):
+        if self.methods.absolute_point_distance([mouse_point.x(), mouse_point.y()], point):
             self.plot_widget.removeItem(self.hover_label)
             self.plot_widget.addItem(self.hover_label)
-            self.hover_label.setText(f"    {closest_point}")
+
+            region = f'[{point[1]}, {point[1]+int(self.bin_filter.text())}]'
+            hover_text = f'average of {round(point[0], 4)}mm within elevation region {region}' \
+                         f'\nDouble click to see histogram in the selected region.'
+
+            self.hover_label.setText(hover_text)
             self.hover_label.setPos(mouse_point.x(), mouse_point.y())
         else:
             self.plot_widget.removeItem(self.hover_label)
