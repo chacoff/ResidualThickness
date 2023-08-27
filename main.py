@@ -391,7 +391,6 @@ class CSVGraphApp(QMainWindow):
             df_histo = df_histo[(df_histo['y'] >= _range[0]) & (df_histo['y'] <= _range[1])]
 
             self.histo.plot_histogram(df_histo, _range, mouse_relative.x()+10, mouse_relative.y())
-
         else:
             self.plot_widget.removeItem(self.hover_label)
             self.histo.close_histo()
@@ -426,7 +425,7 @@ if __name__ == "__main__":
     qdarktheme.setup_theme('light')  # 'light' option
     pg.setConfigOption('background', QColor(248, 249, 250))
     pg.setConfigOption('foreground', 'k')
-    image_window = CSVGraphApp(' ResidualThickness - RDEsch v0.0.3j')
+    image_window = CSVGraphApp(' ResidualThickness - RDEsch v0.0.4j')
     image_window.setWindowIcon(QIcon(r'icons/bar-graph.png'))
     image_window.show()
     image_window.showMaximized()

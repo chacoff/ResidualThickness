@@ -133,7 +133,6 @@ class HistogramApp(QMainWindow):
     def __init__(self):
         super().__init__()
         self.data = None
-        self._methods = Methods()
 
         self.setWindowFlags(Qt.WindowType.FramelessWindowHint)
         self.setGeometry(0, 0, 440, 380)
@@ -158,6 +157,9 @@ class HistogramApp(QMainWindow):
 
     def plot_histogram(self, data: pd, _range: tuple, i: int, j: int):
         self.data = data
+
+        _brush = [52, 93, 205, random.randint(140, 200)]
+
         hist, bins = np.histogram(self.data.x, bins=25)
 
         self.plot_widget.clear()
@@ -166,7 +168,7 @@ class HistogramApp(QMainWindow):
         bars = pg.BarGraphItem(x=bin_centers,
                                height=hist,
                                width=(bins[1] - bins[0]),
-                               brush=self._methods.generate_color() + [180])
+                               brush=_brush)
         self.plot_widget.addItem(bars)
 
         freqs = []
