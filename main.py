@@ -72,13 +72,6 @@ class CSVGraphApp(QMainWindow):
 
         # Left Panel
         self.left_panel = QGridLayout()
-        self.table_widget = QTableWidget(self)
-        self.table_widget.setColumnCount(2)
-        self.table_widget.setHorizontalHeaderLabels(['Thickness', 'Amplitude'])
-        self.table_widget.verticalHeader().setVisible(False)
-        self.table_widget.resizeColumnsToContents()
-        self.table_widget.resizeRowsToContents()
-        self.table_widget.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeMode.Stretch)
         plot_configs = QLabel('Plot settings:')
         plot_configs.setStyleSheet('''QLabel {font-size: 14px; font-weight: bold; color: #606060;}''')
         label_low = QLabel('Low Filter:')
@@ -294,7 +287,8 @@ class CSVGraphApp(QMainWindow):
 
     def selection_column_checkbox(self) -> None:
         self.selected_sensor = self.column_checkbox.currentText()
-        self.plot_data()
+        if self.df_csv1 is not None and self.df_csv2 is not None:
+            self.plot_data()
 
     def plot_data(self) -> None:
 
@@ -405,17 +399,17 @@ class CSVGraphApp(QMainWindow):
     def clear_plot(self) -> None:
         self.df_csv1 = None
         self.df_csv2 = None
+        self.average_data = None
         self.csv1_title.setText(' ')
         self.csv2_title.setText(' ')
-        self.column_checkbox.clear()
         while self.table_csv1.rowCount() > 0:
             self.table_csv1.removeRow(0)
         while self.table_csv2.rowCount() > 0:
             self.table_csv2.removeRow(0)
-        while self.table_widget.rowCount() > 0:
-            self.table_widget.removeRow(0)
+        self.plot_widget.removeItem(self.hover_label)
         self.plot_widget.clear()
         self.histo.close_histo()
+        self.column_checkbox.clear()
 
     def error_box(self, message) -> None:
         dlg = QMessageBox(self)
