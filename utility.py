@@ -5,7 +5,7 @@ import numpy as np
 import random
 from PyQt6.QtWidgets import QWidget, QVBoxLayout, QMainWindow, QPushButton, QLabel
 from PyQt6.QtCore import Qt
-from PyQt6.QtGui import QPixmap, QIcon, QGuiApplication, QScreen, QColor
+from PyQt6.QtGui import QGuiApplication, QScreen, QColor, QPainter, QBrush
 import pyqtgraph as pg
 import math
 
@@ -152,7 +152,7 @@ class HistogramApp(QMainWindow):
         self.setGeometry(0, 0, self._params.histo_width, self._params.histo_height)
 
         layout = QVBoxLayout()
-        self.central_widget = QWidget(self)
+        self.central_widget = RoundedWidget()  # QWidget(self)
         self.setCentralWidget(self.central_widget)
         self.central_widget.setLayout(layout)
 
@@ -215,16 +215,39 @@ class HistogramApp(QMainWindow):
         self.close()
 
 
+class RoundedWidget(QWidget):
+    def __init__(self):
+        super().__init__()
+        self.setWindowFlag(Qt.WindowType.FramelessWindowHint)
+        self.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground)
+        self._params = UIParameters()
+
+    def paintEvent(self, event):
+        painter = QPainter(self)
+        painter.setRenderHint(QPainter.RenderHint.Antialiasing)
+
+        brush = QBrush(QColor(248, 249, 252, 160))  # Background color with transparency
+        painter.setBrush(brush)
+        painter.drawRoundedRect(self.rect(), self._params.rounded_corner, self._params.rounded_corner)  # Rounded corners
+
+
 class UIParameters:
-    # Plot UI parameters
-    histo_width: int = 420
+    # Histo and Plot UI parameters
+    histo_width: int = 390
     histo_width_offset: int = 20
-    histo_height: int = 490
-    histo_height_fix: int = 490
+    histo_height: int = 420
+    histo_height_fix: int = 420
     histo_x_min: float = 9.0
     histo_x_max: float = 15.0
     histo_y_min: float = 0
     histo_y_max: float = 100  # unused >> we use dynamically max(freqs)
+
+    plot_x_min: str = '10'
+    plot_x_max: str = '15'
+    plot_y_min: str = '-10500'
+    plot_y_max: str = '0'
+
+    rounded_corner: int = 7
     display_thresh: tuple = [0.10, 70]
     alpha_grid: float = 0.15
 
