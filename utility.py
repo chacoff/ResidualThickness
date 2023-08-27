@@ -133,9 +133,11 @@ class HistogramApp(QMainWindow):
     def __init__(self, data):
         super().__init__()
         self.data = data
+        methods = Methods()
+        self.colors = methods.generate_color()
 
         self.setWindowFlags(Qt.WindowType.FramelessWindowHint)
-        self.setGeometry(0, 0, 420, 380)
+        self.setGeometry(0, 0, 440, 380)
 
         layout = QVBoxLayout()
         self.central_widget = QWidget(self)
@@ -143,6 +145,11 @@ class HistogramApp(QMainWindow):
         self.central_widget.setLayout(layout)
 
         self.plot_widget = pg.PlotWidget()
+        self.plot_widget.setLabel('left', 'frequency ')
+        self.plot_widget.setLabel('bottom', 'Thickness [mm]')
+        self.plot_widget.setLabel('right', '')
+        self.plot_widget.setLabel('top', '')
+        self.plot_widget.showGrid(True, True, alpha=0.15)
         self.close_button = QPushButton('Close')
         self.close_button.clicked.connect(self.close)
 
@@ -159,26 +166,23 @@ class HistogramApp(QMainWindow):
         self.plot_widget.clear()
 
         bin_centers = (bins[:-1] + bins[1:]) / 2
-        bars = pg.BarGraphItem(x=bin_centers, height=hist, width=(bins[1] - bins[0]), brush=(1, 2, 253, 160))
+        bars = pg.BarGraphItem(x=bin_centers, height=hist, width=(bins[1] - bins[0]), brush=self.colors + [180])
         self.plot_widget.addItem(bars)
-
-        self.plot_widget.hideAxis('left')
-        self.plot_widget.setLabel('bottom', 'Thickness [mm]')
 
         freqs = []
         for bin_center, freq in zip(bin_centers, hist):
-            text_item = pg.TextItem(f'{freq}', anchor=(0.5, 0), color=(251, 253, 254))
+            text_item = pg.TextItem(f'{freq}', anchor=(0.5, 0), color=(252, 255, 252))
             self.plot_widget.addItem(text_item)
             text_item.setPos(bin_center, freq)
             freqs.append(freq)
 
-        self.plot_widget.plotItem.vb.setLimits(xMin=10.0,
-                                               xMax=14.0,
+        self.plot_widget.plotItem.vb.setLimits(xMin=9.0,
+                                               xMax=15.0,
                                                yMin=0,
                                                yMax=max(freqs))
 
         legend = self.plot_widget.addLegend()
-        legend.addItem(bars, f'Histogram\nrange {_range}')
+        legend.addItem(bars, f'Range {_range}')
 
         self.show()
 
