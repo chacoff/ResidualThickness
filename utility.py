@@ -90,6 +90,21 @@ class Methods(object):
         return [random.randint(0, 255) for _ in range(3)]
 
     @staticmethod
+    def give_me_a_color(sensor: str):
+        colors = {
+            'Sensor1': [203, 65, 88],
+            'Sensor2': [135, 38, 236],
+            'Sensor3': [67, 233, 251],
+            'Sensor4': [39, 144, 228],
+            'Sensor5': [255, 128, 0],
+            'Sensor6': [47, 147, 49],
+            'Sensor7': [255, 0, 255],
+            'Sensor8': [255, 0, 0],
+        }
+
+        return colors[sensor]
+
+    @staticmethod
     def closest_point(x: float, y: float, average_data: list) -> list:
         closest_distance = float('inf')
         closest_point = None
@@ -139,7 +154,7 @@ class HistogramApp(QMainWindow):
 
     def plot_histogram(self, _range: tuple):
 
-        hist, bins = np.histogram(self.data.x, bins=20)
+        hist, bins = np.histogram(self.data.x, bins=25)
 
         self.plot_widget.clear()
 

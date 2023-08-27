@@ -162,7 +162,7 @@ class CSVGraphApp(QMainWindow):
         self.load_csv2.triggered.connect(lambda: self.open_csv(action=2))
         self.plot_button = QAction(QIcon(r'icons/plot-graph.png'), 'Plot Data', self)
         self.plot_button.triggered.connect(self.plot_data)
-        self.plot_button.setShortcut('Return')
+        self.plot_button.setShortcuts(['Return', 'Enter'])
         self.plot_clear = QAction(QIcon(r'icons/clear.png'), 'Clear plot and data', self)
         self.plot_clear.triggered.connect(self.clear_plot)
 
@@ -316,7 +316,7 @@ class CSVGraphApp(QMainWindow):
                                                        high_filter=float(self.high_filter.text()),
                                                        saturation=100)
 
-        color = self.methods.generate_color()
+        color = self.methods.give_me_a_color(self.selected_sensor)
 
         x_1 = filtered_thickness[self.selected_sensor]
 
@@ -460,7 +460,7 @@ if __name__ == "__main__":
     qdarktheme.setup_theme('light')  # 'light' option
     pg.setConfigOption('background', QColor(248, 249, 250))
     pg.setConfigOption('foreground', 'k')
-    image_window = CSVGraphApp(' ResidualThickness - RDEsch v0.0.2j')
+    image_window = CSVGraphApp(' ResidualThickness - RDEsch v0.0.3j')
     image_window.setWindowIcon(QIcon(r'icons/bar-graph.png'))
     image_window.show()
     image_window.showMaximized()
