@@ -3,7 +3,9 @@ import sys
 import csv
 import numpy as np
 import random
-from PyQt6.QtWidgets import QWidget, QVBoxLayout, QMainWindow
+from PyQt6.QtWidgets import QWidget, QVBoxLayout, QMainWindow, QPushButton, QLabel
+from PyQt6.QtCore import Qt
+from PyQt6.QtGui import QPixmap, QIcon, QGuiApplication, QScreen
 import pyqtgraph as pg
 import math
 
@@ -116,8 +118,9 @@ class HistogramApp(QMainWindow):
     def __init__(self, data):
         super().__init__()
         self.data = data
-        self.setWindowTitle("Histogram Graph")
-        self.setGeometry(0, 0, 380, 260)
+
+        self.setWindowFlags(Qt.WindowType.FramelessWindowHint)
+        self.setGeometry(0, 0, 420, 380)
 
         layout = QVBoxLayout()
         self.central_widget = QWidget(self)
@@ -125,23 +128,50 @@ class HistogramApp(QMainWindow):
         self.central_widget.setLayout(layout)
 
         self.plot_widget = pg.PlotWidget()
-        layout.addWidget(self.plot_widget)
+        self.close_button = QPushButton('Close')
+        self.close_button.clicked.connect(self.close)
 
+        layout.addWidget(self.plot_widget)
+        layout.addWidget(self.close_button)
+
+        self.center_on_screen()
         self.instances.append(self)
 
     def plot_histogram(self, _range: tuple):
-        hist = np.histogram(self.data.x, bins=30)
+
+        hist, bins = np.histogram(self.data.x, bins=30)
 
         self.plot_widget.clear()
-        self.plot_widget.addLegend()
 
-        # Plotting histogram bars
-        hist_curve = pg.PlotCurveItem(hist[1], hist[0], stepMode=True, fillLevel=0, brush=(3, 5, 253, 180))
-        self.plot_widget.addItem(hist_curve)
+        bin_centers = (bins[:-1] + bins[1:]) / 2
+        bars = pg.BarGraphItem(x=bin_centers, height=hist, width=(bins[1] - bins[0]), brush=(1, 2, 253, 160))
+        self.plot_widget.addItem(bars)
 
-        self.plot_widget.setLabel('left', 'Frequency')
+        self.plot_widget.hideAxis('left')
         self.plot_widget.setLabel('bottom', 'Thickness [mm]')
-        self.plot_widget.setTitle(f'Histogram range {_range}')
-        self.plot_widget.setXRange(min(hist[1]), max(hist[1]))
-        self.plot_widget.setYRange(0, max(hist[0]) + 5)
+
+        freqs = []
+        for bin_center, freq in zip(bin_centers, hist):
+            text_item = pg.TextItem(f'{freq}', anchor=(0.5, 0), color=(255, 255, 255))
+            self.plot_widget.addItem(text_item)
+            text_item.setPos(bin_center, freq)
+            freqs.append(freq)
+
+        self.plot_widget.plotItem.vb.setLimits(xMin=10.0,
+                                               xMax=14.0,
+                                               yMin=0,
+                                               yMax=max(freqs))
+
+        legend = self.plot_widget.addLegend()
+        legend.addItem(bars, f'Histogram range {_range}')
+
         self.show()
+
+    def center_on_screen(self):
+        available_geometry = QGuiApplication.primaryScreen().availableGeometry()
+        window_geometry = self.geometry()
+
+        x = (available_geometry.width() - window_geometry.width()) // 2
+        y = (available_geometry.height() - window_geometry.height()) // 2
+
+        self.move(x, y)
