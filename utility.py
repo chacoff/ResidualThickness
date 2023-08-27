@@ -223,6 +223,7 @@ class RoundedWidget(QWidget):
         self._params = UIParameters()
 
     def paintEvent(self, event):
+        """" override paintEvent"""
         painter = QPainter(self)
         painter.setRenderHint(QPainter.RenderHint.Antialiasing)
 
