@@ -3,7 +3,7 @@ import csv
 from PyQt6.QtWidgets import QApplication, QMainWindow, QFileDialog, QPushButton, QVBoxLayout, QHBoxLayout, QWidget, \
     QMessageBox, QLabel, QGridLayout, QTableWidget, QHeaderView, QTableWidgetItem, QLineEdit, QComboBox, QMdiSubWindow
 from PyQt6.QtCore import Qt, QSize, QFileInfo, QPointF
-from PyQt6.QtGui import QAction, QColor, QIcon, QPixmap, QFont, QIntValidator
+from PyQt6.QtGui import QAction, QColor, QIcon, QPixmap, QFont, QIntValidator, QCursor
 from pyqtgraph.Qt import QtGui
 import pyqtgraph as pg
 import qdarktheme
@@ -346,7 +346,7 @@ class CSVGraphApp(QMainWindow):
                                                yMax=int(self.y_max.text()))
 
     def plot_clicked(self, event) -> None:
-        """ gets the nearest average point on scene """
+        """ originally gets the nearest average point on scene, now just clean the plot """
 
         if not self.average_data:
             return
@@ -354,18 +354,20 @@ class CSVGraphApp(QMainWindow):
         if event.double():
             self.histo.close_histo()
 
-            vb = self.plot_widget.plotItem.vb
-            scene_coords = event.scenePos()
-
-            if self.plot_widget.sceneBoundingRect().contains(scene_coords):
-                clicked_point = vb.mapSceneToView(scene_coords)
-                print(clicked_point)
+            # vb = self.plot_widget.plotItem.vb
+            # scene_coords = event.scenePos()
+            #
+            # if self.plot_widget.sceneBoundingRect().contains(scene_coords):
+            #     clicked_point = vb.mapSceneToView(scene_coords)
+            #     print(clicked_point)
 
     def mouse_moved(self, event) -> None:
         """ calls the histogram and a hover item """
+
         if not self.average_data:
             return
 
+        mouse_relative = QCursor.pos()
         mouse_point = self.plot_widget.getViewBox().mapSceneToView(event)
 
         point = self.methods.closest_point(mouse_point.x(), mouse_point.y(), self.average_data)
@@ -387,14 +389,12 @@ class CSVGraphApp(QMainWindow):
             df_histo = df_histo[df_histo['x'].notna()]  # remove NaN
             _range = (point[1], point[1] + int(self.bin_filter.text()))  # lower, upper
             df_histo = df_histo[(df_histo['y'] >= _range[0]) & (df_histo['y'] <= _range[1])]
-            self.plot_histogram(df_histo, _range)
+
+            self.histo.plot_histogram(df_histo, _range, mouse_relative.x()+10, mouse_relative.y())
 
         else:
             self.plot_widget.removeItem(self.hover_label)
             self.histo.close_histo()
-
-    def plot_histogram(self, data: pd, _range: tuple) -> None:
-        self.histo.plot_histogram(data, _range)
 
     def clear_plot(self) -> None:
         self.df_csv1 = None

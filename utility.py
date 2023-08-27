@@ -133,8 +133,7 @@ class HistogramApp(QMainWindow):
     def __init__(self):
         super().__init__()
         self.data = None
-        methods = Methods()
-        self.colors = methods.generate_color()
+        self._methods = Methods()
 
         self.setWindowFlags(Qt.WindowType.FramelessWindowHint)
         self.setGeometry(0, 0, 440, 380)
@@ -152,21 +151,22 @@ class HistogramApp(QMainWindow):
         self.plot_widget.showGrid(True, True, alpha=0.15)
         self.close_button = QPushButton('Close')
         self.close_button.clicked.connect(self.close_histo)
-
         layout.addWidget(self.plot_widget)
         layout.addWidget(self.close_button)
 
-        self.center_on_screen()
         self.instances.append(self)
 
-    def plot_histogram(self, data: pd, _range: tuple):
+    def plot_histogram(self, data: pd, _range: tuple, i: int, j: int):
         self.data = data
         hist, bins = np.histogram(self.data.x, bins=25)
 
         self.plot_widget.clear()
 
         bin_centers = (bins[:-1] + bins[1:]) / 2
-        bars = pg.BarGraphItem(x=bin_centers, height=hist, width=(bins[1] - bins[0]), brush=self.colors + [180])
+        bars = pg.BarGraphItem(x=bin_centers,
+                               height=hist,
+                               width=(bins[1] - bins[0]),
+                               brush=self._methods.generate_color() + [180])
         self.plot_widget.addItem(bars)
 
         freqs = []
@@ -184,6 +184,7 @@ class HistogramApp(QMainWindow):
         legend = self.plot_widget.addLegend()
         legend.addItem(bars, f'Range {_range}')
 
+        self.move(i, j)
         self.show()
 
     def center_on_screen(self):
