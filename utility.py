@@ -3,7 +3,7 @@ import sys
 import csv
 import numpy as np
 import random
-from PyQt6.QtWidgets import QWidget, QVBoxLayout
+from PyQt6.QtWidgets import QWidget, QVBoxLayout, QMainWindow
 import pyqtgraph as pg
 import math
 
@@ -110,17 +110,38 @@ class Methods(object):
         return diff1[0] < thresh[0] and diff1[1] < thresh[1]
 
 
-class SecondGraphWindow(QWidget):
-    def __init__(self, x, y):
-        super().__init__()
+class HistogramApp(QMainWindow):
+    instances = []
 
-        self.setWindowTitle("Second Graph")
-        self.setGeometry(100, 100, 600, 400)
+    def __init__(self, data):
+        super().__init__()
+        self.data = data
+        self.setWindowTitle("Histogram Graph")
+        self.setGeometry(100, 100, 800, 600)
 
         layout = QVBoxLayout()
-        self.setLayout(layout)
+        self.central_widget = QWidget(self)
+        self.setCentralWidget(self.central_widget)
+        self.central_widget.setLayout(layout)
 
-        plot_widget = pg.PlotWidget()
-        layout.addWidget(plot_widget)
+        self.plot_widget = pg.PlotWidget()
+        layout.addWidget(self.plot_widget)
 
-        plot_widget.plot(x, y)
+        self.instances.append(self)
+
+    def plot_histogram(self):
+        hist = np.histogram(self.data.x, bins=30)
+
+        self.plot_widget.clear()
+        self.plot_widget.addLegend()
+
+        # Plotting histogram bars
+        hist_curve = pg.PlotCurveItem(hist[1], hist[0], stepMode=True, fillLevel=0, brush=(3, 5, 251, 150))
+        self.plot_widget.addItem(hist_curve)
+
+        self.plot_widget.setLabel('left', 'Frequency')
+        self.plot_widget.setLabel('bottom', 'Thickness [mm]')
+        self.plot_widget.setTitle(f'Histogram range ({min(self.data.y)} - {max(self.data.y)})')
+        self.plot_widget.setXRange(min(hist[1]), max(hist[1]))
+        self.plot_widget.setYRange(0, max(hist[0]) + 10)
+        self.show()

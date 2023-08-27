@@ -9,7 +9,7 @@ import pyqtgraph as pg
 import qdarktheme
 import pandas as pd
 import numpy as np
-from utility import Methods, SecondGraphWindow
+from utility import Methods, HistogramApp
 
 
 class CSVGraphApp(QMainWindow):
@@ -388,22 +388,10 @@ class CSVGraphApp(QMainWindow):
         else:
             self.plot_widget.removeItem(self.hover_label)
 
-    def plot_histogram(self, data: np):
-        print(data)
-        hist = np.histogram(data.x, bins=30)
-
-        self.plot_widget.clear()
-        self.plot_widget.addLegend()
-
-        # Plotting histogram bars
-        hist_curve = pg.PlotCurveItem(hist[1], hist[0], stepMode=True, fillLevel=0, brush=(0, 0, 255, 150))
-        self.plot_widget.addItem(hist_curve)
-
-        # self.plot_widget.setLabel("left", "Frequency")
-        # self.plot_widget.setLabel("bottom", "Value")
-        # self.plot_widget.setTitle("Histogram")
-        # self.plot_widget.setXRange(min(hist[1]), max(hist[1]))
-        # self.plot_widget.setYRange(0, max(hist[0]) + 10)
+    @staticmethod
+    def plot_histogram(data: pd) -> None:
+        histo = HistogramApp(data)
+        histo.plot_histogram()
 
     def clear_plot(self) -> None:
         self.df_csv1 = None
@@ -473,4 +461,5 @@ if __name__ == "__main__":
     image_window.setWindowIcon(QIcon(r'icons/bar-graph.png'))
     image_window.show()
     image_window.showMaximized()
+    HistogramApp.instances.append(image_window)
     sys.exit(app.exec())
