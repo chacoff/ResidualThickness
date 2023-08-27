@@ -9,6 +9,7 @@ import pyqtgraph as pg
 import qdarktheme
 import pandas as pd
 import numpy as np
+import os
 from utility import Methods, HistogramApp
 
 
@@ -156,10 +157,8 @@ class CSVGraphApp(QMainWindow):
         # Central Panel
         central_panel = QVBoxLayout()
         toolbar = self.addToolBar('menu')
-        self.load_csv1 = QAction(QIcon(r'icons/csv-file.png'), 'Load CSV with Thickness data', self)
-        self.load_csv1.triggered.connect(lambda: self.open_csv(action=1))
-        self.load_csv2 = QAction(QIcon(r'icons/csv-file_2.png'), 'Load CSV with Amplitud data', self)
-        self.load_csv2.triggered.connect(lambda: self.open_csv(action=2))
+        self.load_csv1 = QAction(QIcon(r'icons/csv-file.png'), 'Load CSV with Thickness or Amplitude data', self)
+        self.load_csv1.triggered.connect(self.open_csv)
         self.plot_button = QAction(QIcon(r'icons/plot-graph.png'), 'Plot Data', self)
         self.plot_button.triggered.connect(self.plot_data)
         self.plot_button.setShortcuts(['Return', 'Enter'])
@@ -167,7 +166,6 @@ class CSVGraphApp(QMainWindow):
         self.plot_clear.triggered.connect(self.clear_plot)
 
         toolbar.addAction(self.load_csv1)
-        toolbar.addAction(self.load_csv2)
         toolbar.addAction(self.plot_button)
         toolbar.addAction(self.plot_clear)
         toolbar.setMovable(False)
@@ -224,13 +222,13 @@ class CSVGraphApp(QMainWindow):
         self.histo = HistogramApp()
         self.df_csv1: pd = None  # csv thickness to plot
         self.df_csv1_name: str = 'Thickness'
-        self.df_csv2: pd = None  # csv AMP for filtering
+        self.df_csv2: pd = None  # csv AMP (amplitude) for filtering
         self.df_csv2_name: str = 'Amplitude'
         self.selected_sensor: str = 'Sensor3'
         self.average_data: list = []
         self.for_histo: list = []
 
-    def open_csv(self, action) -> None:
+    def open_csv(self) -> None:
 
         file_name, _ = QFileDialog.getOpenFileName(self,
                                                    "Open CSV File", "./sample_data",
@@ -239,19 +237,28 @@ class CSVGraphApp(QMainWindow):
         if not file_name:
             return
 
-        if action == 1:
-            self.df_csv1_name = QFileInfo(file_name).baseName()  # fileName() to have it with the extension
-            self.read_csv_header(file_name, self.table_csv1, self.df_csv1_name, self.csv1_title)
-            self.df_csv1 = self.methods.return_dataframe(file_name, skip=47)
-        elif action == 2:
-            self.df_csv2_name = QFileInfo(file_name).baseName()  # fileName() to have it with the extension
-            self.read_csv_header(file_name, self.table_csv2, self.df_csv2_name, self.csv2_title)
-            self.df_csv2 = self.methods.return_dataframe(file_name, skip=47)
-        else:
-            self.error_box('No implementation')
+        data_path = QFileInfo(file_name).absolutePath()
+        is_amplitude = 'AMP' in QFileInfo(file_name).baseName()
+
+        if is_amplitude:
+            name = QFileInfo(file_name).baseName()  # .fileName()
+            name_csv_amplitude = os.path.join(data_path, name)
+            size = len(name_csv_amplitude)
+            name_csv_thickness = name_csv_amplitude[:size - 6]
+        else:  # it is a thickness file
+            name = QFileInfo(file_name).baseName()  # .fileName()
+            name_csv_thickness = os.path.join(data_path, name)
+            name_csv_amplitude = name_csv_thickness + ' - AMP'
+
+        self.df_csv1_name = QFileInfo(name_csv_thickness+'.csv').baseName()  # fileName() to have it with the extension
+        self.read_csv_header(name_csv_thickness+'.csv', self.table_csv1, self.df_csv1_name, self.csv1_title)
+        self.df_csv1 = self.methods.return_dataframe(name_csv_thickness+'.csv', skip=47)
+
+        self.df_csv2_name = QFileInfo(name_csv_amplitude+'.csv').baseName()  # fileName() to have it with the extension
+        self.read_csv_header(name_csv_amplitude+'.csv', self.table_csv2, self.df_csv2_name, self.csv2_title)
+        self.df_csv2 = self.methods.return_dataframe(name_csv_amplitude+'.csv', skip=47)
 
         self.populate_checkbox()
-        # self.populate_dropping_buttons()
 
     def read_csv_header(self, _file: str, _table: QTableWidget, _name: str, _qtitle: QLabel) -> None:
         """ populates tables with the header parameters from each CSV file and populate the table
