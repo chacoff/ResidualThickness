@@ -139,7 +139,7 @@ class HistogramApp(QMainWindow):
 
     def plot_histogram(self, _range: tuple):
 
-        hist, bins = np.histogram(self.data.x, bins=30)
+        hist, bins = np.histogram(self.data.x, bins=20)
 
         self.plot_widget.clear()
 
@@ -152,7 +152,7 @@ class HistogramApp(QMainWindow):
 
         freqs = []
         for bin_center, freq in zip(bin_centers, hist):
-            text_item = pg.TextItem(f'{freq}', anchor=(0.5, 0), color=(255, 255, 255))
+            text_item = pg.TextItem(f'{freq}', anchor=(0.5, 0), color=(251, 253, 254))
             self.plot_widget.addItem(text_item)
             text_item.setPos(bin_center, freq)
             freqs.append(freq)
@@ -163,7 +163,7 @@ class HistogramApp(QMainWindow):
                                                yMax=max(freqs))
 
         legend = self.plot_widget.addLegend()
-        legend.addItem(bars, f'Histogram range {_range}')
+        legend.addItem(bars, f'Histogram\nrange {_range}')
 
         self.show()
 

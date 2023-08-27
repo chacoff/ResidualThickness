@@ -162,6 +162,7 @@ class CSVGraphApp(QMainWindow):
         self.load_csv2.triggered.connect(lambda: self.open_csv(action=2))
         self.plot_button = QAction(QIcon(r'icons/plot-graph.png'), 'Plot Data', self)
         self.plot_button.triggered.connect(self.plot_data)
+        self.plot_button.setShortcut('Return')
         self.plot_clear = QAction(QIcon(r'icons/clear.png'), 'Clear plot and data', self)
         self.plot_clear.triggered.connect(self.clear_plot)
 
@@ -187,7 +188,8 @@ class CSVGraphApp(QMainWindow):
         self.plot_widget.setLabel('bottom', 'Thickness [mm]')
         self.plot_widget.setLabel('right', '')
         self.plot_widget.setLabel('top', '')
-        self.plot_widget.showGrid(True, True)
+        self.plot_widget.showGrid(True, True, alpha=0.15)
+        # self.plot_widget.getPlotItem().showGrid(x=True, y=True, alpha=0.3)
         self.plot_widget.scene().sigMouseMoved.connect(self.mouse_moved)
         self.plot_widget.scene().sigMouseClicked.connect(self.plot_clicked)
         central_panel.setAlignment(Qt.AlignmentFlag.AlignTop)
@@ -380,7 +382,8 @@ class CSVGraphApp(QMainWindow):
             self.plot_widget.addItem(self.hover_label)
 
             region = f'[{point[1]}, {point[1]+int(self.bin_filter.text())}]'
-            hover_text = f'average of {round(point[0], 4)}mm within elevation region {region}' \
+            hover_text = f'average of {round(point[0], 4)} [mm] within the region of ' \
+                         f'\nelevation: {region}.' \
                          f'\nDouble click to see histogram in the selected region.'
 
             self.hover_label.setText(hover_text)
