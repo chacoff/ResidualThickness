@@ -361,7 +361,7 @@ class CSVGraphApp(QMainWindow):
                                                            self.average_data)
 
                 if closest_point:
-                    print("Closest point in average_data:", closest_point[0], closest_point[1])
+                    # print("Closest point in average_data:", closest_point[0], closest_point[1])
                     df_histo = pd.DataFrame({'x': self.for_histo[0], 'y': self.for_histo[1]})
                     df_histo = df_histo[df_histo['x'].notna()]  # remove NaN
                     _range = (closest_point[1], closest_point[1]+int(self.bin_filter.text()))  # lower, upper
