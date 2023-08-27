@@ -410,6 +410,7 @@ class CSVGraphApp(QMainWindow):
         self.plot_widget.clear()
         self.histo.close_histo()
         self.column_checkbox.clear()
+        self.histo.instances = []
 
     def error_box(self, message) -> None:
         dlg = QMessageBox(self)

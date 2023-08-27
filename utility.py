@@ -11,6 +11,9 @@ import math
 
 
 class Methods(object):
+    def __init__(self):
+        super().__init__()
+        self._params = UIParameters()
 
     @staticmethod
     def return_dataframe(file_name: str, skip: int) -> pd:
@@ -120,20 +123,18 @@ class Methods(object):
     def distance_to_point(a: list, b: list) -> int:
         return int(math.dist(a, b))
 
-    @staticmethod
-    def absolute_point_distance(a: list, b: list) -> bool:
-        thresh = [0.10, 70]
+    def absolute_point_distance(self, a: list, b: list) -> bool:
+        thresh = self._params.display_thresh
         diff1 = [abs(a[0] - b[0]), abs(a[1] - b[1])]
         return diff1[0] < thresh[0] and diff1[1] < thresh[1]
 
-    @staticmethod
-    def fixer_for_j(j) -> int:
+    def fixer_for_j(self, j) -> int:
         """ fix j to place the histogram always in the available screen space"""
         available_geometry = QGuiApplication.primaryScreen().availableGeometry()
         j_available = available_geometry.height()
 
-        if j + 580 > j_available:
-            return j-480
+        if j + self._params.histo_height > j_available:
+            return j-self._params.histo_height_fix
         else:
             return j
 
@@ -145,9 +146,10 @@ class HistogramApp(QMainWindow):
         super().__init__()
         self.data = None
         self._methods = Methods()
+        self._params = UIParameters()
 
         self.setWindowFlags(Qt.WindowType.FramelessWindowHint)
-        self.setGeometry(0, 0, 440, 580)
+        self.setGeometry(0, 0, self._params.histo_width, self._params.histo_height)
 
         layout = QVBoxLayout()
         self.central_widget = QWidget(self)
@@ -155,15 +157,26 @@ class HistogramApp(QMainWindow):
         self.central_widget.setLayout(layout)
 
         self.plot_widget = pg.PlotWidget()
-        self.plot_widget.setLabel('left', 'frequency ')
-        self.plot_widget.setLabel('bottom', 'Thickness [mm]')
-        self.plot_widget.setLabel('right', '')
-        self.plot_widget.setLabel('top', '')
-        self.plot_widget.showGrid(True, True, alpha=0.15)
+        # self.plot_widget.setLabel('left', 'frequency ')
+        # self.plot_widget.setLabel('bottom', 'Thickness [mm]')
+        # self.plot_widget.setLabel('right', '')
+        # self.plot_widget.setLabel('top', '')
+        self.plot_widget.getPlotItem().hideAxis('bottom')
+        self.plot_widget.getPlotItem().hideAxis('left')
+        self.plot_widget.showGrid(True, True, alpha=self._params.alpha_grid)
         self.close_button = QPushButton('Close')
         self.close_button.clicked.connect(self.close_histo)
         layout.addWidget(self.plot_widget)
         layout.addWidget(self.close_button)
+
+        self.setStyleSheet(
+            """
+            QWidget {
+                background-color: rgba(0, 0, 255, 180); /* Background color with transparency */
+                border-radius: 32px; /* Rounded corners */
+            }
+            """
+        )
 
         self.instances.append(self)
 
@@ -213,3 +226,11 @@ class HistogramApp(QMainWindow):
 
     def close_histo(self) -> None:
         self.close()
+
+
+class UIParameters:
+    histo_width: int = 420
+    histo_height: int = 490
+    histo_height_fix: int = 490
+    display_thresh: tuple = [0.10, 70]
+    alpha_grid: float = 0.15
