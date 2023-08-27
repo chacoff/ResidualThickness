@@ -364,7 +364,7 @@ class CSVGraphApp(QMainWindow):
                     df_histo = df_histo[df_histo['x'].notna()]  # remove NaN
                     _range = (closest_point[1], closest_point[1]+int(self.bin_filter.text()))  # lower, upper
                     df_histo = df_histo[(df_histo['y'] >= _range[0]) & (df_histo['y'] <= _range[1])]
-                    self.plot_histogram(df_histo)
+                    self.plot_histogram(df_histo, _range)
 
     def mouse_moved(self, event) -> None:
 
@@ -389,9 +389,9 @@ class CSVGraphApp(QMainWindow):
             self.plot_widget.removeItem(self.hover_label)
 
     @staticmethod
-    def plot_histogram(data: pd) -> None:
+    def plot_histogram(data: pd, _range: tuple) -> None:
         histo = HistogramApp(data)
-        histo.plot_histogram()
+        histo.plot_histogram(_range)
 
     def clear_plot(self) -> None:
         self.df_csv1 = None

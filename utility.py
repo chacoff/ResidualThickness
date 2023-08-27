@@ -117,7 +117,7 @@ class HistogramApp(QMainWindow):
         super().__init__()
         self.data = data
         self.setWindowTitle("Histogram Graph")
-        self.setGeometry(100, 100, 800, 600)
+        self.setGeometry(0, 0, 380, 260)
 
         layout = QVBoxLayout()
         self.central_widget = QWidget(self)
@@ -129,19 +129,19 @@ class HistogramApp(QMainWindow):
 
         self.instances.append(self)
 
-    def plot_histogram(self):
+    def plot_histogram(self, _range: tuple):
         hist = np.histogram(self.data.x, bins=30)
 
         self.plot_widget.clear()
         self.plot_widget.addLegend()
 
         # Plotting histogram bars
-        hist_curve = pg.PlotCurveItem(hist[1], hist[0], stepMode=True, fillLevel=0, brush=(3, 5, 251, 150))
+        hist_curve = pg.PlotCurveItem(hist[1], hist[0], stepMode=True, fillLevel=0, brush=(3, 5, 253, 180))
         self.plot_widget.addItem(hist_curve)
 
         self.plot_widget.setLabel('left', 'Frequency')
         self.plot_widget.setLabel('bottom', 'Thickness [mm]')
-        self.plot_widget.setTitle(f'Histogram range ({min(self.data.y)} - {max(self.data.y)})')
+        self.plot_widget.setTitle(f'Histogram range {_range}')
         self.plot_widget.setXRange(min(hist[1]), max(hist[1]))
-        self.plot_widget.setYRange(0, max(hist[0]) + 10)
+        self.plot_widget.setYRange(0, max(hist[0]) + 5)
         self.show()
