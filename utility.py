@@ -165,6 +165,7 @@ class HistogramApp(QMainWindow):
         layout.addWidget(self.plot_widget)
         layout.addWidget(self.close_button)
 
+        self.setWindowTitle('histogram')
         self.instances.append(self)
 
     def plot_histogram(self, data: pd, _range: tuple, i: int, j: int):
