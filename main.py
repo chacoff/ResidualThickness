@@ -10,7 +10,7 @@ import qdarktheme
 import pandas as pd
 import numpy as np
 import os
-from utility import Methods, HistogramApp
+from utility import Methods, HistogramApp, UIParameters
 
 
 class CSVGraphApp(QMainWindow):
@@ -20,6 +20,7 @@ class CSVGraphApp(QMainWindow):
         self.setWindowTitle(_title)
         font = QFont()
         font.setPixelSize(16)
+        self._params = UIParameters()
 
         # GUI ----------
         main = QVBoxLayout()
@@ -179,7 +180,7 @@ class CSVGraphApp(QMainWindow):
         self.plot_widget.setLabel('bottom', 'Thickness [mm]')
         self.plot_widget.setLabel('right', '')
         self.plot_widget.setLabel('top', '')
-        self.plot_widget.showGrid(True, True, alpha=0.15)
+        self.plot_widget.showGrid(True, True, alpha=self._params.alpha_grid)
         # self.plot_widget.getPlotItem().showGrid(x=True, y=True, alpha=0.3)
         self.plot_widget.scene().sigMouseMoved.connect(self.mouse_moved)
         self.plot_widget.scene().sigMouseClicked.connect(self.plot_clicked)
@@ -317,7 +318,7 @@ class CSVGraphApp(QMainWindow):
                                                        df_amplitude,
                                                        low_filter=float(self.low_filter.text()),
                                                        high_filter=float(self.high_filter.text()),
-                                                       saturation=100)
+                                                       saturation=self._params.data_saturation)
 
         color = self.methods.give_me_a_color(self.selected_sensor)
 
@@ -326,7 +327,7 @@ class CSVGraphApp(QMainWindow):
         average_by_interval = self.methods.average_by_intervals(_x=x_1,
                                                                 _y=y,
                                                                 interval=int(self.bin_filter.text()),
-                                                                min_elevation=-10000)
+                                                                min_elevation=self._params.data_min_elevation)
 
         self.average_data = average_by_interval.values.tolist()
         self.for_histo = [x_1.values.tolist(), y.values.tolist()]

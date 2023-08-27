@@ -5,7 +5,7 @@ import numpy as np
 import random
 from PyQt6.QtWidgets import QWidget, QVBoxLayout, QMainWindow, QPushButton, QLabel
 from PyQt6.QtCore import Qt
-from PyQt6.QtGui import QPixmap, QIcon, QGuiApplication, QScreen
+from PyQt6.QtGui import QPixmap, QIcon, QGuiApplication, QScreen, QColor
 import pyqtgraph as pg
 import math
 
@@ -157,10 +157,6 @@ class HistogramApp(QMainWindow):
         self.central_widget.setLayout(layout)
 
         self.plot_widget = pg.PlotWidget()
-        # self.plot_widget.setLabel('left', 'frequency ')
-        # self.plot_widget.setLabel('bottom', 'Thickness [mm]')
-        # self.plot_widget.setLabel('right', '')
-        # self.plot_widget.setLabel('top', '')
         self.plot_widget.getPlotItem().hideAxis('bottom')
         self.plot_widget.getPlotItem().hideAxis('left')
         self.plot_widget.showGrid(True, True, alpha=self._params.alpha_grid)
@@ -168,15 +164,6 @@ class HistogramApp(QMainWindow):
         self.close_button.clicked.connect(self.close_histo)
         layout.addWidget(self.plot_widget)
         layout.addWidget(self.close_button)
-
-        self.setStyleSheet(
-            """
-            QWidget {
-                background-color: rgba(0, 0, 255, 180); /* Background color with transparency */
-                border-radius: 32px; /* Rounded corners */
-            }
-            """
-        )
 
         self.instances.append(self)
 
@@ -203,16 +190,16 @@ class HistogramApp(QMainWindow):
             text_item.setPos(bin_center, freq)
             freqs.append(freq)
 
-        self.plot_widget.plotItem.vb.setLimits(xMin=9.0,
-                                               xMax=15.0,
-                                               yMin=0,
+        self.plot_widget.plotItem.vb.setLimits(xMin=self._params.histo_x_min,
+                                               xMax=self._params.histo_x_max,
+                                               yMin=self._params.histo_y_min,
                                                yMax=max(freqs))
 
         legend = self.plot_widget.addLegend()
         legend.addItem(bars, f'Range {_range}')
 
         j = self._methods.fixer_for_j(j)
-        self.move(i+20, j)
+        self.move(i+self._params.histo_width_offset, j)
         self.show()
 
     def center_on_screen(self):
@@ -229,8 +216,18 @@ class HistogramApp(QMainWindow):
 
 
 class UIParameters:
+    # Plot UI parameters
     histo_width: int = 420
+    histo_width_offset: int = 20
     histo_height: int = 490
     histo_height_fix: int = 490
+    histo_x_min: float = 9.0
+    histo_x_max: float = 15.0
+    histo_y_min: float = 0
+    histo_y_max: float = 100  # unused >> we use dynamically max(freqs)
     display_thresh: tuple = [0.10, 70]
     alpha_grid: float = 0.15
+
+    # Data handling
+    data_saturation: int = 100
+    data_min_elevation: int = -10000
