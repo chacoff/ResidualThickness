@@ -429,7 +429,7 @@ if __name__ == "__main__":
     pg.setConfigOption('background', QColor(248, 249, 250))
     pg.setConfigOption('foreground', 'k')
     image_window = CSVGraphApp(' ResidualThickness - RDEsch v0.0.4j')
-    image_window.setWindowIcon(QIcon(r'icons/bar-graph.png'))
+    image_window.setWindowIcon(QIcon(r'icons/chart.png'))
     image_window.show()
     image_window.showMaximized()
     HistogramApp.instances.append(image_window)
