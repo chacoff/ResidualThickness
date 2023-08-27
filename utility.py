@@ -130,9 +130,9 @@ class Methods(object):
 class HistogramApp(QMainWindow):
     instances = []
 
-    def __init__(self, data):
+    def __init__(self):
         super().__init__()
-        self.data = data
+        self.data = None
         methods = Methods()
         self.colors = methods.generate_color()
 
@@ -151,7 +151,7 @@ class HistogramApp(QMainWindow):
         self.plot_widget.setLabel('top', '')
         self.plot_widget.showGrid(True, True, alpha=0.15)
         self.close_button = QPushButton('Close')
-        self.close_button.clicked.connect(self.close)
+        self.close_button.clicked.connect(self.close_histo)
 
         layout.addWidget(self.plot_widget)
         layout.addWidget(self.close_button)
@@ -159,8 +159,8 @@ class HistogramApp(QMainWindow):
         self.center_on_screen()
         self.instances.append(self)
 
-    def plot_histogram(self, _range: tuple):
-
+    def plot_histogram(self, data: pd, _range: tuple):
+        self.data = data
         hist, bins = np.histogram(self.data.x, bins=25)
 
         self.plot_widget.clear()
@@ -194,3 +194,6 @@ class HistogramApp(QMainWindow):
         y = (available_geometry.height() - window_geometry.height()) // 2
 
         self.move(x, y)
+
+    def close_histo(self) -> None:
+        self.close()

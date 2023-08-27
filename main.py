@@ -219,7 +219,9 @@ class CSVGraphApp(QMainWindow):
         self.statusBar().showMessage(f"Ready.")
         # GUI ----------
 
+        # Variables ----------
         self.methods = Methods()
+        self.histo = HistogramApp()
         self.df_csv1: pd = None  # csv thickness to plot
         self.df_csv1_name: str = 'Thickness'
         self.df_csv2: pd = None  # csv AMP for filtering
@@ -350,30 +352,17 @@ class CSVGraphApp(QMainWindow):
             return
 
         if event.double():
+            self.histo.close_histo()
+
             vb = self.plot_widget.plotItem.vb
             scene_coords = event.scenePos()
 
             if self.plot_widget.sceneBoundingRect().contains(scene_coords):
                 clicked_point = vb.mapSceneToView(scene_coords)
-                self.call_histogram(clicked_point)
-
-    def call_histogram(self, clicked_point) -> None:
-        """ call the histogram on the scene """
-
-        closest_point = self.methods.closest_point(clicked_point.x(),
-                                                   clicked_point.y(),
-                                                   self.average_data)
-
-        if closest_point:
-            # print("Closest point in average_data:", closest_point[0], closest_point[1])
-            df_histo = pd.DataFrame({'x': self.for_histo[0], 'y': self.for_histo[1]})
-            df_histo = df_histo[df_histo['x'].notna()]  # remove NaN
-            _range = (closest_point[1], closest_point[1]+int(self.bin_filter.text()))  # lower, upper
-            df_histo = df_histo[(df_histo['y'] >= _range[0]) & (df_histo['y'] <= _range[1])]
-            self.plot_histogram(df_histo, _range)
+                print(clicked_point)
 
     def mouse_moved(self, event) -> None:
-
+        """ calls the histogram and a hover item """
         if not self.average_data:
             return
 
@@ -392,13 +381,20 @@ class CSVGraphApp(QMainWindow):
 
             self.hover_label.setText(hover_text)
             self.hover_label.setPos(mouse_point.x(), mouse_point.y())
+
+            # calling the histogram
+            df_histo = pd.DataFrame({'x': self.for_histo[0], 'y': self.for_histo[1]})
+            df_histo = df_histo[df_histo['x'].notna()]  # remove NaN
+            _range = (point[1], point[1] + int(self.bin_filter.text()))  # lower, upper
+            df_histo = df_histo[(df_histo['y'] >= _range[0]) & (df_histo['y'] <= _range[1])]
+            self.plot_histogram(df_histo, _range)
+
         else:
             self.plot_widget.removeItem(self.hover_label)
+            self.histo.close_histo()
 
-    @staticmethod
-    def plot_histogram(data: pd, _range: tuple) -> None:
-        histo = HistogramApp(data)
-        histo.plot_histogram(_range)
+    def plot_histogram(self, data: pd, _range: tuple) -> None:
+        self.histo.plot_histogram(data, _range)
 
     def clear_plot(self) -> None:
         self.df_csv1 = None
@@ -413,6 +409,7 @@ class CSVGraphApp(QMainWindow):
         while self.table_widget.rowCount() > 0:
             self.table_widget.removeRow(0)
         self.plot_widget.clear()
+        self.histo.close_histo()
 
     def error_box(self, message) -> None:
         dlg = QMessageBox(self)
