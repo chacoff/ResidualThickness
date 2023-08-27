@@ -379,7 +379,7 @@ class CSVGraphApp(QMainWindow):
             region = f'[{point[1]}, {point[1]+int(self.bin_filter.text())}]'
             hover_text = f'average of {round(point[0], 4)} [mm] within the region of ' \
                          f'\nelevation: {region}.' \
-                         f'\nDouble click to see histogram in the selected region.'
+                         f'\nDouble click to close histogram in the selected region.'
 
             self.hover_label.setText(hover_text)
             self.hover_label.setPos(mouse_point.x(), mouse_point.y())
@@ -390,7 +390,7 @@ class CSVGraphApp(QMainWindow):
             _range = (point[1], point[1] + int(self.bin_filter.text()))  # lower, upper
             df_histo = df_histo[(df_histo['y'] >= _range[0]) & (df_histo['y'] <= _range[1])]
 
-            self.histo.plot_histogram(df_histo, _range, mouse_relative.x()+10, mouse_relative.y())
+            self.histo.plot_histogram(df_histo, _range, mouse_relative.x(), mouse_relative.y())
         else:
             self.plot_widget.removeItem(self.hover_label)
             self.histo.close_histo()

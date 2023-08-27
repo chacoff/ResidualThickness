@@ -126,6 +126,17 @@ class Methods(object):
         diff1 = [abs(a[0] - b[0]), abs(a[1] - b[1])]
         return diff1[0] < thresh[0] and diff1[1] < thresh[1]
 
+    @staticmethod
+    def fixer_for_j(j) -> int:
+        """ fix j to place the histogram always in the available screen space"""
+        available_geometry = QGuiApplication.primaryScreen().availableGeometry()
+        j_available = available_geometry.height()
+
+        if j + 580 > j_available:
+            return j-480
+        else:
+            return j
+
 
 class HistogramApp(QMainWindow):
     instances = []
@@ -133,9 +144,10 @@ class HistogramApp(QMainWindow):
     def __init__(self):
         super().__init__()
         self.data = None
+        self._methods = Methods()
 
         self.setWindowFlags(Qt.WindowType.FramelessWindowHint)
-        self.setGeometry(0, 0, 440, 380)
+        self.setGeometry(0, 0, 440, 580)
 
         layout = QVBoxLayout()
         self.central_widget = QWidget(self)
@@ -186,7 +198,8 @@ class HistogramApp(QMainWindow):
         legend = self.plot_widget.addLegend()
         legend.addItem(bars, f'Range {_range}')
 
-        self.move(i, j)
+        j = self._methods.fixer_for_j(j)
+        self.move(i+20, j)
         self.show()
 
     def center_on_screen(self):
