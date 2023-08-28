@@ -1,10 +1,9 @@
 import sys
 import csv
 from PyQt6.QtWidgets import QApplication, QMainWindow, QFileDialog, QPushButton, QVBoxLayout, QHBoxLayout, QWidget, \
-    QMessageBox, QLabel, QGridLayout, QTableWidget, QHeaderView, QTableWidgetItem, QLineEdit, QComboBox, QMdiSubWindow
+    QMessageBox, QLabel, QGridLayout, QTableWidget, QHeaderView, QTableWidgetItem, QLineEdit, QComboBox, QSizePolicy
 from PyQt6.QtCore import Qt, QSize, QFileInfo, QPointF
 from PyQt6.QtGui import QAction, QColor, QIcon, QPixmap, QFont, QIntValidator, QCursor
-from pyqtgraph.Qt import QtGui
 import pyqtgraph as pg
 import qdarktheme
 import pandas as pd
@@ -30,9 +29,20 @@ class CSVGraphApp(QMainWindow):
         self.header_title = QLabel('Residual Thickness:')
         self.header_title.setStyleSheet('''QLabel {font-size: 22px; font-weight: bold; color: #FF8040;}''')
 
-        header.setAlignment(Qt.AlignmentFlag.AlignHCenter)
-        header.setContentsMargins(0, 0, 0, 0)
-        header.addWidget(self.header_title, 0, 0)
+        am_label = QLabel()
+        am_logo = QPixmap('icons/logoAM.png')
+        label_size = self.header_title.sizeHint()
+        scaled_pixmap = am_logo.scaled(label_size,
+                                       Qt.AspectRatioMode.KeepAspectRatio,
+                                       transformMode=Qt.TransformationMode.SmoothTransformation)
+
+        am_label.setPixmap(scaled_pixmap)
+        am_label.setSizePolicy(QSizePolicy.Policy.Ignored, QSizePolicy.Policy.Ignored)
+
+        header.setContentsMargins(8, 12, 12, 0)
+        header.addWidget(QLabel('  '), 0, 0)
+        header.addWidget(self.header_title, 0, 1, alignment=Qt.AlignmentFlag.AlignCenter)
+        header.addWidget(am_label, 0, 2, alignment=Qt.AlignmentFlag.AlignRight)
 
         w_header_panel = QWidget()
         w_header_panel.setLayout(header)
@@ -300,9 +310,8 @@ class CSVGraphApp(QMainWindow):
             return
 
         self.plot_widget.removeItem(self.hover_label)
-
         self.plot_widget.clear()
-        self.plot_widget.addItem(self.hover_label)
+
         self.header_title.setText(f'Residual Thickness: {self.df_csv1_name}')
 
         columns_to_keep = ['Elevation', self.selected_sensor]

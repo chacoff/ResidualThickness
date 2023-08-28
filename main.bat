@@ -2,11 +2,11 @@
 
 SETLOCAL EnableDelayedExpansion
 
-SET CONDA=C:\Users\jaime\miniconda3\Scripts
+SET CONDA=C:\Users\%USERNAME%\miniconda3\Scripts
 
 SET PATH=%CONDA%\Scripts;%CONDA%;%PATH%
 
-CALL activate residual
+CALL activate logiciel
 START python main.py
 
 

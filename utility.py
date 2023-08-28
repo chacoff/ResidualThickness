@@ -234,25 +234,25 @@ class RoundedWidget(QWidget):
 
 
 class UIParameters:
-    # Histo and Plot UI parameters
-    histo_width: int = 390
-    histo_width_offset: int = 20
-    histo_height: int = 420
-    histo_height_fix: int = 420
-    histo_x_min: float = 9.0
-    histo_x_max: float = 15.0
-    histo_y_min: float = 0
-    histo_y_max: float = 100  # unused >> we use dynamically max(freqs)
+    # Histogram plot
+    histo_width: int = 400              # width of the histogram window
+    histo_width_offset: int = 20        # offset from the mouse pointer
+    histo_height: int = 225             # height of the histogram window
+    histo_height_fix: int = 225         # maximum offset to avoid the histogram window to be outside the screen
+    histo_x_min: float = 9.0            # x_min in the histogram plot
+    histo_x_max: float = 15.0           # x_max in the histogram plot
+    histo_y_min: float = 0              # y_min in the histogram plot
+    histo_y_max: float = 100            # y_max in the histogram plot: unused >> we use dynamically max(freqs)
+    rounded_corner: int = 7             # number in pixels to round the corner of the histogram window
 
-    plot_x_min: str = '10'
-    plot_x_max: str = '15'
-    plot_y_min: str = '-10500'
-    plot_y_max: str = '0'
+    # Main Plot
+    plot_x_min: str = '10'              # x_min for the main plot
+    plot_x_max: str = '15'              # x_max for the main plot
+    plot_y_min: str = '-10500'          # y_min for the main plot
+    plot_y_max: str = '0'               # y_max for the main plot
+    display_thresh: tuple = [0.10, 70]  # absolute space between mouse and point of interest to display histogram
+    alpha_grid: float = 0.15            # alpha value for the grid in plots (shared between main and histogram plot)
 
-    rounded_corner: int = 7
-    display_thresh: tuple = [0.10, 70]
-    alpha_grid: float = 0.15
-
-    # Data handling
-    data_saturation: int = 100
-    data_min_elevation: int = -10000
+    # Data filtering
+    data_saturation: int = 100          # to filter data consider saturated
+    data_min_elevation: int = -10000    # min elevation corresponding to the data
