@@ -6,8 +6,14 @@ SET CONDA=C:\Users\%USERNAME%\miniconda3\Scripts
 
 SET PATH=%CONDA%\Scripts;%CONDA%;%PATH%
 
-CALL activate logiciel
-START python main.py
+rem logiciel and residual environment << local solution
+CALL activate logiciel && (
+	echo sucess
+) || (
+	echo error ... searching another environment
+	CALL activate residual
+)
 
+START python main.py
 
 @echo ON
