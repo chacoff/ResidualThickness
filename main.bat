@@ -14,6 +14,6 @@ CALL activate logiciel && (
 	CALL activate residual
 )
 
-START python main.py
+START pythonw main.py
 
 @echo ON
