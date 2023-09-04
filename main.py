@@ -83,6 +83,8 @@ class CSVGraphApp(QMainWindow):
 
         # Left Panel
         self.left_panel = QGridLayout()
+
+        # Left panel data filters
         data_configs = QLabel('Data filters:')
         data_configs.setStyleSheet('''QLabel {font-size: 14px; font-weight: bold; color: #606060;}''')
         label_low = QLabel('Low Filter:')
@@ -90,16 +92,33 @@ class CSVGraphApp(QMainWindow):
         self.low_filter.setMaxLength(2)  # Set maximum length to 4 characters
         self.low_filter.setValidator(QIntValidator())  # Allow only integer input
         self.low_filter.setText('60')
+        self.low_filter.setToolTip('minimum is 0%')
         label_high = QLabel('High Filter:')
         self.high_filter = QLineEdit()
         self.high_filter.setMaxLength(2)
         self.high_filter.setValidator(QIntValidator())
         self.high_filter.setText('85')
+        self.high_filter.setToolTip('maximum is 99%')
         label_bin = QLabel('Mean Interval:')
         self.bin_filter = QLineEdit()
         self.bin_filter.setMaxLength(4)
         self.bin_filter.setValidator(QIntValidator())
         self.bin_filter.setText('500')
+        self.bin_filter.setToolTip('Recommended value is 1000mm. Maximum is 9999mm')
+        label_max_elev = QLabel('Max. elevation:')
+        self.max_elev_filter = QLineEdit()
+        self.max_elev_filter.setMaxLength(2)
+        self.max_elev_filter.setValidator(QIntValidator())
+        self.max_elev_filter.setText('0')
+        self.max_elev_filter.setToolTip('Recommended value is 0mm')
+        label_min_elev = QLabel('Min. elevation:')
+        self.min_elev_filter = QLineEdit()
+        self.min_elev_filter.setMaxLength(6)
+        self.min_elev_filter.setValidator(QIntValidator())
+        self.min_elev_filter.setText('-10000')
+        self.min_elev_filter.setToolTip('Recommended value is -10000mm')
+
+        # Left panel plot settings
         plot_configs = QLabel('Plot settings:')
         plot_configs.setStyleSheet('''QLabel {font-size: 14px; font-weight: bold; color: #606060;}''')
         label_x_min = QLabel('X min:')
@@ -114,7 +133,7 @@ class CSVGraphApp(QMainWindow):
         self.x_max.setText(self._params.plot_x_max)
         label_y_min = QLabel('Y min:')
         self.y_min = QLineEdit()
-        self.y_min.setMaxLength(8)
+        self.y_min.setMaxLength(6)
         self.y_min.setValidator(QIntValidator())
         self.y_min.setText(self._params.plot_y_min)
         label_y_max = QLabel('Y max:')
@@ -140,22 +159,28 @@ class CSVGraphApp(QMainWindow):
         self.left_panel.addWidget(label_bin, 3, 0)
         self.left_panel.addWidget(self.bin_filter, 3, 1)
         self.left_panel.addWidget(QLabel('[mm]'), 3, 2)
-        self.left_panel.addWidget(plot_configs, 4, 0, 1, 3)
-        self.left_panel.addWidget(label_x_min, 5, 0)
-        self.left_panel.addWidget(self.x_min, 5, 1)
+        self.left_panel.addWidget(label_max_elev, 4, 0)
+        self.left_panel.addWidget(self.max_elev_filter, 4, 1)
         self.left_panel.addWidget(QLabel('[mm]'), 4, 2)
-        self.left_panel.addWidget(label_x_max, 6, 0)
-        self.left_panel.addWidget(self.x_max, 6, 1)
-        self.left_panel.addWidget(QLabel('[mm]'), 6, 2)
-        self.left_panel.addWidget(label_y_min, 7, 0)
-        self.left_panel.addWidget(self.y_min, 7, 1)
+        self.left_panel.addWidget(label_min_elev, 5, 0)
+        self.left_panel.addWidget(self.min_elev_filter, 5, 1)
+        self.left_panel.addWidget(QLabel('[mm]'), 5, 2)
+        self.left_panel.addWidget(plot_configs, 6, 0, 1, 3)
+        self.left_panel.addWidget(label_x_min, 7, 0)
+        self.left_panel.addWidget(self.x_min, 7, 1)
         self.left_panel.addWidget(QLabel('[mm]'), 7, 2)
-        self.left_panel.addWidget(label_y_max, 8, 0)
-        self.left_panel.addWidget(self.y_max, 8, 1)
+        self.left_panel.addWidget(label_x_max, 8, 0)
+        self.left_panel.addWidget(self.x_max, 8, 1)
         self.left_panel.addWidget(QLabel('[mm]'), 8, 2)
+        self.left_panel.addWidget(label_y_min, 9, 0)
+        self.left_panel.addWidget(self.y_min, 9, 1)
+        self.left_panel.addWidget(QLabel('[mm]'), 9, 2)
+        self.left_panel.addWidget(label_y_max, 10, 0)
+        self.left_panel.addWidget(self.y_max, 10, 1)
+        self.left_panel.addWidget(QLabel('[mm]'), 10, 2)
         # self.left_panel.addWidget(self.table_widget, 8, 0, 1, 3)
-        self.left_panel.addWidget(label_checkbox, 9, 0, 1, 3)
-        self.left_panel.addWidget(self.column_checkbox, 10, 0, 1, 3)
+        self.left_panel.addWidget(label_checkbox, 11, 0, 1, 3)
+        self.left_panel.addWidget(self.column_checkbox, 12, 0, 1, 3)
         # self.left_panel.setRowStretch(5, 1)
 
         w_left_panel = QWidget()
@@ -323,6 +348,8 @@ class CSVGraphApp(QMainWindow):
 
         df_thickness = df_thickness[columns_to_keep]
         df_amplitude = df_amplitude[columns_to_keep]
+
+        # TODO: a filter to keep data between elevations -10K and 0. parameters already exist but not the input fields
 
         y = df_thickness.Elevation
 

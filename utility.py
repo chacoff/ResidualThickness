@@ -255,4 +255,5 @@ class UIParameters:
 
     # Data filtering
     data_saturation: int = 100          # to filter data consider saturated
-    data_min_elevation: int = -10000    # min elevation corresponding to the data
+    data_max_elevation: int = 0         # max elevation corresponding data (y axis)
+    data_min_elevation: int = -10000    # min elevation corresponding data (y axis)
