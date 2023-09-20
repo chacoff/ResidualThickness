@@ -145,6 +145,12 @@ class CSVGraphApp(QMainWindow):
         label_checkbox.setStyleSheet('''QLabel {font-size: 14px; font-weight: bold; color: #606060;}''')
         self.column_checkbox = QComboBox()
         self.column_checkbox.currentIndexChanged.connect(self.selection_column_checkbox)
+        self.action_add_box = QPushButton('add sensor')
+        self.action_add_box.clicked.connect(self.add_qcombobox)
+        self.action_add_box.setDisabled(True)
+        self.action_del_box = QPushButton('remove sensor')
+        self.action_del_box.clicked.connect(self.remove_qcombobox)
+        self.action_del_box.setDisabled(True)
 
         self.left_panel.setAlignment(Qt.AlignmentFlag.AlignTop)
         self.left_panel.setContentsMargins(0, 8, 0, 0)
@@ -179,8 +185,18 @@ class CSVGraphApp(QMainWindow):
         self.left_panel.addWidget(self.y_max, 10, 1)
         self.left_panel.addWidget(QLabel('[mm]'), 10, 2)
         # self.left_panel.addWidget(self.table_widget, 8, 0, 1, 3)
+
         self.left_panel.addWidget(label_checkbox, 11, 0, 1, 3)
-        self.left_panel.addWidget(self.column_checkbox, 12, 0, 1, 3)
+
+        ad = QHBoxLayout()
+        ad.addWidget(self.action_add_box)
+        ad.addWidget(self.action_del_box)
+        ad.setContentsMargins(0, 0, 0, 0)
+        ad_ = QWidget()
+        ad_.setLayout(ad)
+        self.left_panel.addWidget(ad_, 12, 0, 1, 3)
+
+        self.left_panel.addWidget(self.column_checkbox, 13, 0, 1, 3)
         # self.left_panel.setRowStretch(5, 1)
 
         w_left_panel = QWidget()
@@ -259,6 +275,8 @@ class CSVGraphApp(QMainWindow):
         self.selected_sensor: str = 'Sensor3'
         self.average_data: list = []
         self.for_histo: list = []
+        self.widget_counter: int = 14
+        self._chk_slave_list: list = []
 
     def open_csv(self) -> None:
 
@@ -290,7 +308,9 @@ class CSVGraphApp(QMainWindow):
         self.read_csv_header(name_csv_amplitude+'.csv', self.table_csv2, self.df_csv2_name, self.csv2_title)
         self.df_csv2 = self.methods.return_dataframe(name_csv_amplitude+'.csv', skip=47)
 
-        self.populate_checkbox()
+        self.populate_checkbox(self.column_checkbox)
+        self.action_add_box.setDisabled(False)
+        self.action_del_box.setDisabled(False)
 
     def read_csv_header(self, _file: str, _table: QTableWidget, _name: str, _qtitle: QLabel) -> None:
         """ populates tables with the header parameters from each CSV file and populate the table
@@ -316,13 +336,13 @@ class CSVGraphApp(QMainWindow):
 
         self.statusBar().showMessage(f"Loaded rows from {_csv}")
 
-    def populate_checkbox(self) -> None:
+    def populate_checkbox(self, box) -> None:
         if self.df_csv1 is not None and self.df_csv2 is not None:
             checkbox_items = []
             for row_idx, column in enumerate(self.df_csv1.columns):
                 if column != 'Elevation':
                     checkbox_items.append(column)
-            self.column_checkbox.addItems(checkbox_items)
+            box.addItems(checkbox_items)
 
     def selection_column_checkbox(self) -> None:
         self.selected_sensor = self.column_checkbox.currentText()
@@ -451,6 +471,36 @@ class CSVGraphApp(QMainWindow):
         self.histo.close_histo()
         self.column_checkbox.clear()
         self.histo.instances = []
+
+    def add_qcombobox(self) -> None:
+
+        if self.widget_counter <= 20:
+            _chk_slave = QComboBox()
+            _chk_slave.currentIndexChanged.connect(self.new_sensors)
+            self.left_panel.addWidget(_chk_slave, self.widget_counter, 0, 1, 3)
+
+            self.main_widget.update()
+            self.widget_counter += 1
+
+            self._chk_slave_list.append(_chk_slave)
+            self.populate_checkbox(_chk_slave)
+        else:
+            self.error_box('The maximum number of slave plots are 7')
+
+    def remove_qcombobox(self):
+        n = len(self._chk_slave_list)  # last
+
+        if n > 0:
+            w = self._chk_slave_list[n-1]  # last widget
+            self.left_panel.removeWidget(w)  # remove from widgets
+            self._chk_slave_list.remove(w)  # remove from list of widgets
+            self.widget_counter -= 1  # update counter positions
+        else:
+            self.error_box('No slave plots to delete')
+        self.main_widget.update()
+
+    def new_sensors(self, e):
+        print(f'Sensor{e+1}')
 
     def error_box(self, message) -> None:
         dlg = QMessageBox(self)
