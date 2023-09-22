@@ -391,8 +391,6 @@ class CSVGraphApp(QMainWindow):
 
         self.header_title.setText(f'Residual Thickness: {self.df_csv1_name}')
 
-        print(self.selected_sensor_list)
-
         for _sensor in self.selected_sensor_list:
             columns_to_keep = ['Elevation', _sensor]  # before: self.selected_sensor
             color = self.methods.give_me_a_color(_sensor)  # before: self.selected_sensor
@@ -426,9 +424,9 @@ class CSVGraphApp(QMainWindow):
             scatter_plot.setData(x=x_1, y=y)
             self.plot_widget.addItem(scatter_plot)
 
-            scatter_average = pg.ScatterPlotItem(size=12, pen=pg.mkPen(None), brush=pg.mkBrush(color+[220]))
-            scatter_average.setData(x=average_by_interval.x, y=average_by_interval.elevation_bin)
-            self.plot_widget.addItem(scatter_average)
+            # scatter_average = pg.ScatterPlotItem(size=12, pen=pg.mkPen(None), brush=pg.mkBrush(color+[220]))
+            # scatter_average.setData(x=average_by_interval.x, y=average_by_interval.elevation_bin)
+            # self.plot_widget.addItem(scatter_average)
 
         # general settings for view the plot
         self.plot_widget.plotItem.vb.setLimits(xMin=int(self.x_min.text()),
@@ -504,6 +502,11 @@ class CSVGraphApp(QMainWindow):
         self.histo.instances = []
         self.action_add_box.setDisabled(True)
         self.action_del_box.setDisabled(True)
+        for w in self._chk_slave_list:
+            self.left_panel.removeWidget(w)
+        self.widget_counter = 14
+        self._chk_slave_list = []
+        self.main_widget.update()
 
     def add_qcombobox(self) -> None:
 
