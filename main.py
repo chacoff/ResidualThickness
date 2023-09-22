@@ -144,7 +144,7 @@ class CSVGraphApp(QMainWindow):
         label_checkbox = QLabel('Sensor to plot:')
         label_checkbox.setStyleSheet('''QLabel {font-size: 14px; font-weight: bold; color: #606060;}''')
         self.column_checkbox = QComboBox()
-        self.column_checkbox.currentIndexChanged.connect(self.selection_column_checkbox)
+        self.column_checkbox.currentIndexChanged.connect(self.selection_master_combobox)
         self.action_add_box = QPushButton('add sensor')
         self.action_add_box.clicked.connect(self.add_qcombobox)
         self.action_add_box.setDisabled(True)
@@ -273,6 +273,17 @@ class CSVGraphApp(QMainWindow):
         self.df_csv2: pd = None  # csv AMP (amplitude) for filtering
         self.df_csv2_name: str = 'Amplitude'
         self.selected_sensor: str = 'Sensor3'
+        self.selected_sensor_list: list = []
+        self.selected_sensor_dict: dict = {
+            'master': None,
+            'slave0': None,
+            'slave1': None,
+            'slave2': None,
+            'slave3': None,
+            'slave4': None,
+            'slave5': None,
+            'slave6': None
+        }
         self.average_data: list = []
         self.for_histo: list = []
         self.widget_counter: int = 14
@@ -337,6 +348,7 @@ class CSVGraphApp(QMainWindow):
         self.statusBar().showMessage(f"Loaded rows from {_csv}")
 
     def populate_checkbox(self, box) -> None:
+        """ function to populate the combo boxes with the available sensors to plot """
         if self.df_csv1 is not None and self.df_csv2 is not None:
             checkbox_items = []
             for row_idx, column in enumerate(self.df_csv1.columns):
@@ -344,10 +356,27 @@ class CSVGraphApp(QMainWindow):
                     checkbox_items.append(column)
             box.addItems(checkbox_items)
 
-    def selection_column_checkbox(self) -> None:
+    def selection_master_combobox(self) -> None:
         self.selected_sensor = self.column_checkbox.currentText()
-        if self.df_csv1 is not None and self.df_csv2 is not None:
-            self.plot_data()
+        self.selected_sensor_dict['master'] = self.column_checkbox.currentText()
+        self.update_selected_sensors_list()
+
+        # No longer automatic plot, every plot is now trigger with the plot button
+        # if self.df_csv1 is not None and self.df_csv2 is not None:
+        #     self.plot_data()
+
+    def new_sensor_to_keep(self, e: int) -> None:
+        _sender = self.sender()
+        _index: int = self._chk_slave_list.index(_sender)
+        _slave: str = f'slave{_index}'
+
+        _sensor = f'Sensor{e+1}'
+        self.selected_sensor_dict[_slave] = _sensor
+        self.update_selected_sensors_list()
+
+    def update_selected_sensors_list(self) -> None:
+        _temp_dict = dict(filter(lambda item: item[1] is not None, self.selected_sensor_dict.items()))
+        self.selected_sensor_list = list(_temp_dict.values())
 
     def plot_data(self) -> None:
 
@@ -362,43 +391,44 @@ class CSVGraphApp(QMainWindow):
 
         self.header_title.setText(f'Residual Thickness: {self.df_csv1_name}')
 
-        columns_to_keep = ['Elevation', self.selected_sensor]
-        df_thickness = self.df_csv1.copy()
-        df_amplitude = self.df_csv2.copy()
+        print(self.selected_sensor_list)
 
-        df_thickness = df_thickness[columns_to_keep]
-        df_amplitude = df_amplitude[columns_to_keep]
+        for _sensor in self.selected_sensor_list:
+            columns_to_keep = ['Elevation', _sensor]  # before: self.selected_sensor
+            color = self.methods.give_me_a_color(_sensor)  # before: self.selected_sensor
+            df_thickness = self.df_csv1.copy()
+            df_amplitude = self.df_csv2.copy()
 
-        # TODO: a filter to keep data between elevations -10K and 0. parameters already exist but not the input fields
+            df_thickness = df_thickness[columns_to_keep]
+            df_amplitude = df_amplitude[columns_to_keep]
 
-        y = df_thickness.Elevation
+            # TODO: a filter to keep data between elevations -10K and 0. parameters exist but not the UI input fields
 
-        filtered_thickness = self.methods.apply_filter(df_thickness,
-                                                       df_amplitude,
-                                                       low_filter=float(self.low_filter.text()),
-                                                       high_filter=float(self.high_filter.text()),
-                                                       saturation=self._params.data_saturation)
+            y = df_thickness.Elevation
 
-        color = self.methods.give_me_a_color(self.selected_sensor)
+            filtered_thickness = self.methods.apply_filter(df_thickness,
+                                                           df_amplitude,
+                                                           low_filter=float(self.low_filter.text()),
+                                                           high_filter=float(self.high_filter.text()),
+                                                           saturation=self._params.data_saturation)
 
-        x_1 = filtered_thickness[self.selected_sensor]
+            x_1 = filtered_thickness[_sensor]  # before: self.selected_sensor
 
-        average_by_interval = self.methods.average_by_intervals(_x=x_1,
-                                                                _y=y,
-                                                                interval=int(self.bin_filter.text()),
-                                                                min_elevation=self._params.data_min_elevation)
+            average_by_interval = self.methods.average_by_intervals(_x=x_1,
+                                                                    _y=y,
+                                                                    interval=int(self.bin_filter.text()),
+                                                                    min_elevation=self._params.data_min_elevation)
 
-        self.average_data = average_by_interval.values.tolist()
-        self.for_histo = [x_1.values.tolist(), y.values.tolist()]
+            self.average_data = average_by_interval.values.tolist()
+            self.for_histo = [x_1.values.tolist(), y.values.tolist()]
 
-        scatter_plot = pg.ScatterPlotItem(size=2, pen=pg.mkPen(None), brush=pg.mkBrush(color+[64]))
-        scatter_plot.setData(x=x_1, y=y)
+            scatter_plot = pg.ScatterPlotItem(size=2, pen=pg.mkPen(None), brush=pg.mkBrush(color+[64]))
+            scatter_plot.setData(x=x_1, y=y)
+            self.plot_widget.addItem(scatter_plot)
 
-        scatter_average = pg.ScatterPlotItem(size=12, pen=pg.mkPen(None), brush=pg.mkBrush(color+[220]))
-        scatter_average.setData(x=average_by_interval.x, y=average_by_interval.elevation_bin)
-
-        self.plot_widget.addItem(scatter_plot)
-        self.plot_widget.addItem(scatter_average)
+            scatter_average = pg.ScatterPlotItem(size=12, pen=pg.mkPen(None), brush=pg.mkBrush(color+[220]))
+            scatter_average.setData(x=average_by_interval.x, y=average_by_interval.elevation_bin)
+            self.plot_widget.addItem(scatter_average)
 
         # general settings for view the plot
         self.plot_widget.plotItem.vb.setLimits(xMin=int(self.x_min.text()),
@@ -457,6 +487,7 @@ class CSVGraphApp(QMainWindow):
             self.histo.close_histo()
 
     def clear_plot(self) -> None:
+        """ reset the UI as if it just started """
         self.df_csv1 = None
         self.df_csv2 = None
         self.average_data = None
@@ -471,12 +502,14 @@ class CSVGraphApp(QMainWindow):
         self.histo.close_histo()
         self.column_checkbox.clear()
         self.histo.instances = []
+        self.action_add_box.setDisabled(True)
+        self.action_del_box.setDisabled(True)
 
     def add_qcombobox(self) -> None:
 
         if self.widget_counter <= 20:
             _chk_slave = QComboBox()
-            _chk_slave.currentIndexChanged.connect(self.new_sensors)
+            _chk_slave.currentIndexChanged.connect(self.new_sensor_to_keep)
             self.left_panel.addWidget(_chk_slave, self.widget_counter, 0, 1, 3)
 
             self.main_widget.update()
@@ -498,9 +531,6 @@ class CSVGraphApp(QMainWindow):
         else:
             self.error_box('No slave plots to delete')
         self.main_widget.update()
-
-    def new_sensors(self, e):
-        print(f'Sensor{e+1}')
 
     def error_box(self, message) -> None:
         dlg = QMessageBox(self)
