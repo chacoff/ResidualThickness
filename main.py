@@ -407,17 +407,13 @@ class CSVGraphApp(QMainWindow):
         self.header_title.setText(f'Residual Thickness: {self.df_csv1_name}')
 
         for _sensor in self.selected_sensor_list:
-            columns_to_keep = ['Elevation', _sensor]  # before: self.selected_sensor
-            color = self.methods.give_me_a_color(_sensor)  # before: self.selected_sensor
+            columns_to_keep = ['Elevation', _sensor]
             df_thickness = self.df_csv1.copy()
             df_amplitude = self.df_csv2.copy()
-
             df_thickness = df_thickness[columns_to_keep]
             df_amplitude = df_amplitude[columns_to_keep]
 
             # TODO: a filter to keep data between elevations -10K and 0. parameters exist but not the UI input fields
-
-            y = df_thickness.Elevation
 
             filtered_thickness = self.methods.apply_filter(df_thickness,
                                                            df_amplitude,
@@ -426,7 +422,8 @@ class CSVGraphApp(QMainWindow):
                                                            saturation=self._params.data_saturation)
 
             x_1 = filtered_thickness[_sensor]  # before: self.selected_sensor
-
+            y = df_thickness.Elevation
+            color = self.methods.give_me_a_color(_sensor)
             scatter_plot = pg.ScatterPlotItem(size=2, pen=pg.mkPen(None), brush=pg.mkBrush(color + [64]))
             scatter_plot.setData(x=x_1, y=y)
             self.plot_widget.addItem(scatter_plot)
@@ -439,20 +436,13 @@ class CSVGraphApp(QMainWindow):
             self.average_sensor_data[_sensor] = average_by_interval  # storing all the average by interval results
             self.for_histo = [x_1.values.tolist(), y.values.tolist()]  # for histogram
 
-        averaged_df = self.methods.average_by_intervals_all_sensors(_data=self.average_sensor_data)
+        averaged_df: pd = self.methods.average_by_intervals_all_sensors(_data=self.average_sensor_data)
         self.average_data = averaged_df.values.tolist()
 
         scatter_average = pg.ScatterPlotItem(size=12, pen=pg.mkPen(None), brush=pg.mkBrush([255, 128, 64, 220]))
         scatter_average.setData(x=averaged_df.x, y=averaged_df.elevation_bin)
         self.plot_widget.addItem(scatter_average)
-
-        self.average_sensor_data: dict = dict()  # clean the dictionary for safety
-
-        # general settings for view the plot
-        self.plot_widget.plotItem.vb.setLimits(xMin=int(self.x_min.text()),
-                                               xMax=int(self.x_max.text()),
-                                               yMin=int(self.y_min.text()),
-                                               yMax=int(self.y_max.text()))
+        self.plot_defaults()
 
     def plot_clicked(self, event) -> None:
         """ originally gets the nearest average point on scene, now just clean the plot """
@@ -503,6 +493,14 @@ class CSVGraphApp(QMainWindow):
         else:
             self.plot_widget.removeItem(self.hover_label)
             self.histo.close_histo()
+
+    def plot_defaults(self) -> None:
+        """ defaults for plotting """
+        self.average_sensor_data: dict = dict()
+        self.plot_widget.plotItem.vb.setLimits(xMin=int(self.x_min.text()),
+                                               xMax=int(self.x_max.text()),
+                                               yMin=int(self.y_min.text()),
+                                               yMax=int(self.y_max.text()))
 
     def clear_plot(self) -> None:
         """ reset the UI as if it just started """

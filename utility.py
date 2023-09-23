@@ -108,12 +108,12 @@ class Methods(object):
     def give_me_a_color(sensor: str):
         colors = {
             'Sensor1': [203, 65, 88],
-            'Sensor2': [135, 38, 236],
+            'Sensor2': [47, 147, 49],
             'Sensor3': [67, 233, 251],
             'Sensor4': [39, 144, 228],
-            'Sensor5': [255, 128, 0],
-            'Sensor6': [47, 147, 49],
-            'Sensor7': [255, 0, 255],
+            'Sensor5': [255, 0, 255],
+            'Sensor6': [135, 38, 236],
+            'Sensor7': [255, 128, 0],
             'Sensor8': [255, 0, 0],
         }
 
