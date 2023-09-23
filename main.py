@@ -357,8 +357,23 @@ class CSVGraphApp(QMainWindow):
             box.addItems(checkbox_items)
 
     def selection_master_combobox(self) -> None:
+        """ handles the selection in the master combo box """
+
+        if len(self.selected_sensor_list) == 1:  # it means only the master combo box is available
+            self.selected_sensor_dict: dict = {  # we reset the dictionary of selected sensors
+                'master': None,
+                'slave0': None,
+                'slave1': None,
+                'slave2': None,
+                'slave3': None,
+                'slave4': None,
+                'slave5': None,
+                'slave6': None
+            }
+
         self.selected_sensor = self.column_checkbox.currentText()
         self.selected_sensor_dict['master'] = self.column_checkbox.currentText()
+
         self.update_selected_sensors_list()
 
         # No longer automatic plot, every plot is now trigger with the plot button
@@ -388,7 +403,6 @@ class CSVGraphApp(QMainWindow):
 
         self.plot_widget.removeItem(self.hover_label)
         self.plot_widget.clear()
-
         self.header_title.setText(f'Residual Thickness: {self.df_csv1_name}')
 
         for _sensor in self.selected_sensor_list:
@@ -412,21 +426,23 @@ class CSVGraphApp(QMainWindow):
 
             x_1 = filtered_thickness[_sensor]  # before: self.selected_sensor
 
+            scatter_plot = pg.ScatterPlotItem(size=2, pen=pg.mkPen(None), brush=pg.mkBrush(color + [64]))
+            scatter_plot.setData(x=x_1, y=y)
+            self.plot_widget.addItem(scatter_plot)
+
+            # ---- all about averages and histograms
             average_by_interval = self.methods.average_by_intervals(_x=x_1,
                                                                     _y=y,
                                                                     interval=int(self.bin_filter.text()),
                                                                     min_elevation=self._params.data_min_elevation)
 
-            self.average_data = average_by_interval.values.tolist()
-            self.for_histo = [x_1.values.tolist(), y.values.tolist()]
-
-            scatter_plot = pg.ScatterPlotItem(size=2, pen=pg.mkPen(None), brush=pg.mkBrush(color+[64]))
-            scatter_plot.setData(x=x_1, y=y)
-            self.plot_widget.addItem(scatter_plot)
+            # self.average_data = average_by_interval.values.tolist()
+            # self.for_histo = [x_1.values.tolist(), y.values.tolist()]
 
             # scatter_average = pg.ScatterPlotItem(size=12, pen=pg.mkPen(None), brush=pg.mkBrush(color+[220]))
             # scatter_average.setData(x=average_by_interval.x, y=average_by_interval.elevation_bin)
             # self.plot_widget.addItem(scatter_average)
+            # ----
 
         # general settings for view the plot
         self.plot_widget.plotItem.vb.setLimits(xMin=int(self.x_min.text()),
@@ -528,11 +544,13 @@ class CSVGraphApp(QMainWindow):
 
         if n > 0:
             w = self._chk_slave_list[n-1]  # last widget
-            self.left_panel.removeWidget(w)  # remove from widgets
+            self.left_panel.removeWidget(w)  # remove from UI widgets
             self._chk_slave_list.remove(w)  # remove from list of widgets
             self.widget_counter -= 1  # update counter positions
+            self.selected_sensor_list.pop()  # remove from list to plot
         else:
             self.error_box('No slave plots to delete')
+
         self.main_widget.update()
 
     def error_box(self, message) -> None:
