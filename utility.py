@@ -89,6 +89,18 @@ class Methods(object):
         return result
 
     @staticmethod
+    def average_by_intervals_all_sensors(_data: dict) -> pd:
+        """ calculate the averages of all averages from all sensors according the previous intervals"""
+        _df = None
+        for key, value in _data.items():
+            _df = pd.concat([_df, value])
+
+        averaged_df = _df.groupby('elevation_bin')['x'].mean().reset_index()
+        averaged_df = averaged_df.reindex(columns=['x', 'elevation_bin'])  # reindex to keep this column order
+
+        return averaged_df
+
+    @staticmethod
     def generate_color():
         return [random.randint(0, 255) for _ in range(3)]
 

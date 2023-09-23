@@ -236,7 +236,7 @@ class CSVGraphApp(QMainWindow):
         self.plot_widget.setLabel('top', '')
         self.plot_widget.showGrid(True, True, alpha=self._params.alpha_grid)
         # self.plot_widget.getPlotItem().showGrid(x=True, y=True, alpha=0.3)
-        self.plot_widget.scene().sigMouseMoved.connect(self.mouse_moved)
+        self.plot_widget.scene().sigMouseMoved.connect(self.plot_mouse_hover)
         self.plot_widget.scene().sigMouseClicked.connect(self.plot_clicked)
         central_panel.setAlignment(Qt.AlignmentFlag.AlignTop)
         central_panel.setContentsMargins(0, 0, 0, 0)
@@ -284,6 +284,7 @@ class CSVGraphApp(QMainWindow):
             'slave5': None,
             'slave6': None
         }
+        self.average_sensor_data: dict = dict()  # empty!
         self.average_data: list = []
         self.for_histo: list = []
         self.widget_counter: int = 14
@@ -430,19 +431,22 @@ class CSVGraphApp(QMainWindow):
             scatter_plot.setData(x=x_1, y=y)
             self.plot_widget.addItem(scatter_plot)
 
-            # ---- all about averages and histograms
             average_by_interval = self.methods.average_by_intervals(_x=x_1,
                                                                     _y=y,
                                                                     interval=int(self.bin_filter.text()),
                                                                     min_elevation=self._params.data_min_elevation)
 
-            # self.average_data = average_by_interval.values.tolist()
-            # self.for_histo = [x_1.values.tolist(), y.values.tolist()]
+            self.average_sensor_data[_sensor] = average_by_interval  # storing all the average by interval results
+            self.for_histo = [x_1.values.tolist(), y.values.tolist()]  # for histogram
 
-            # scatter_average = pg.ScatterPlotItem(size=12, pen=pg.mkPen(None), brush=pg.mkBrush(color+[220]))
-            # scatter_average.setData(x=average_by_interval.x, y=average_by_interval.elevation_bin)
-            # self.plot_widget.addItem(scatter_average)
-            # ----
+        averaged_df = self.methods.average_by_intervals_all_sensors(_data=self.average_sensor_data)
+        self.average_data = averaged_df.values.tolist()
+
+        scatter_average = pg.ScatterPlotItem(size=12, pen=pg.mkPen(None), brush=pg.mkBrush([255, 128, 64, 220]))
+        scatter_average.setData(x=averaged_df.x, y=averaged_df.elevation_bin)
+        self.plot_widget.addItem(scatter_average)
+
+        self.average_sensor_data: dict = dict()  # clean the dictionary for safety
 
         # general settings for view the plot
         self.plot_widget.plotItem.vb.setLimits(xMin=int(self.x_min.text()),
@@ -466,7 +470,7 @@ class CSVGraphApp(QMainWindow):
             #     clicked_point = vb.mapSceneToView(scene_coords)
             #     print(clicked_point)
 
-    def mouse_moved(self, event) -> None:
+    def plot_mouse_hover(self, event) -> None:
         """ calls the histogram and a hover item """
 
         if not self.average_data:
