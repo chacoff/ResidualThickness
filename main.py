@@ -406,6 +406,8 @@ class CSVGraphApp(QMainWindow):
         self.plot_widget.clear()
         self.header_title.setText(f'Residual Thickness: {self.df_csv1_name}')
 
+        x_histo = []
+        y_histo = []
         for _sensor in self.selected_sensor_list:
             columns_to_keep = ['Elevation', _sensor]
             df_thickness = self.df_csv1.copy()
@@ -434,7 +436,9 @@ class CSVGraphApp(QMainWindow):
                                                                     min_elevation=self._params.data_min_elevation)
 
             self.average_sensor_data[_sensor] = average_by_interval  # storing all the average by interval results
-            self.for_histo = [x_1.values.tolist(), y.values.tolist()]  # for histogram
+            x_histo = x_histo + x_1.values.tolist()
+            y_histo = y_histo + y.values.tolist()
+            self.for_histo = [x_histo, y_histo]  # for histogram
 
         averaged_df: pd = self.methods.average_by_intervals_all_sensors(_data=self.average_sensor_data)
         self.average_data = averaged_df.values.tolist()
