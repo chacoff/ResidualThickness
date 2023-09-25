@@ -465,12 +465,11 @@ class CSVGraphApp(QMainWindow):
             scatter_plot.setData(x=x_1, y=y)
             self.plot_widget.addItem(scatter_plot)
 
-            average_by_interval = self.methods.average_by_intervals(_x=x_1,
-                                                                    _y=y,
-                                                                    interval=int(self.bin_filter.text()),
-                                                                    min_elevation=self._params.data_min_elevation)
-
-            self.average_sensor_data[_sensor] = average_by_interval  # storing all the average by interval results
+            # storing all the average by interval per sensor in a dictionary
+            self.average_sensor_data[_sensor] = self.methods.average_by_intervals(_x=x_1,
+                                                                                  _y=y,
+                                                                                  interval=int(self.bin_filter.text()),
+                                                                                  min_elevation=self._params.data_min_elevation)
             x_histo = x_histo + x_1.values.tolist()
             y_histo = y_histo + y.values.tolist()
             self.for_histo = [x_histo, y_histo]  # for histogram
