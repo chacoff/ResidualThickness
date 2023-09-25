@@ -9,6 +9,7 @@ import qdarktheme
 import pandas as pd
 import numpy as np
 import os
+from scipy import stats
 from utility import Methods, HistogramApp, UIParameters
 
 
@@ -141,10 +142,12 @@ class CSVGraphApp(QMainWindow):
         self.y_max.setMaxLength(8)
         self.y_max.setValidator(QIntValidator())
         self.y_max.setText(self._params.plot_y_max)
-        label_results = QLabel('Interval Results:')
-        label_results.setStyleSheet('''QLabel {font-size: 14px; font-weight: bold; color: #606060;}''')
+        self.label_results = QLabel('Interval Results:')
+        self.label_results.setStyleSheet('''QLabel {font-size: 14px; font-weight: bold; color: #606060;}''')
         label_result_average = QLabel('Mean:')
         self.result_average = QLabel('0.000000')
+        label_result_trim_20 = QLabel('Trimmed mean 20%: ')
+        self.result_trim_20 = QLabel('0.000000')
         label_result_std = QLabel('Standard Deviation:')
         self.result_std = QLabel('0.000000')
         label_result_mode = QLabel('Mode:')
@@ -202,36 +205,41 @@ class CSVGraphApp(QMainWindow):
         # self.left_panel.addWidget(self.table_widget, 8, 0, 1, 3)
 
         # left panel: plot result
-        self.left_panel.addWidget(label_results, 11, 0, 1, 3)
+        self.left_panel.addWidget(self.label_results, 11, 0, 1, 3)
         self.left_panel.addWidget(label_result_average, 12, 0)
         self.left_panel.addWidget(self.result_average, 12, 1)
         self.left_panel.addWidget(QLabel('[mm]'), 12, 2)
-        self.left_panel.addWidget(label_result_std, 13, 0)
-        self.left_panel.addWidget(self.result_std, 13, 1)
+
+        self.left_panel.addWidget(label_result_trim_20, 13, 0)
+        self.left_panel.addWidget(self.result_trim_20, 13, 1)
         self.left_panel.addWidget(QLabel('[mm]'), 13, 2)
-        self.left_panel.addWidget(label_result_mode, 14, 0)
-        self.left_panel.addWidget(self.result_mode, 14, 1)
+
+        self.left_panel.addWidget(label_result_std, 14, 0)
+        self.left_panel.addWidget(self.result_std, 14, 1)
         self.left_panel.addWidget(QLabel('[mm]'), 14, 2)
-        self.left_panel.addWidget(label_result_median, 15, 0)
-        self.left_panel.addWidget(self.result_median, 15, 1)
+        self.left_panel.addWidget(label_result_mode, 15, 0)
+        self.left_panel.addWidget(self.result_mode, 15, 1)
         self.left_panel.addWidget(QLabel('[mm]'), 15, 2)
-        self.left_panel.addWidget(label_result_min, 16, 0)
-        self.left_panel.addWidget(self.result_min, 16, 1)
+        self.left_panel.addWidget(label_result_median, 16, 0)
+        self.left_panel.addWidget(self.result_median, 16, 1)
         self.left_panel.addWidget(QLabel('[mm]'), 16, 2)
-        self.left_panel.addWidget(label_result_max, 17, 0)
-        self.left_panel.addWidget(self.result_max, 17, 1)
+        self.left_panel.addWidget(label_result_min, 17, 0)
+        self.left_panel.addWidget(self.result_min, 17, 1)
         self.left_panel.addWidget(QLabel('[mm]'), 17, 2)
+        self.left_panel.addWidget(label_result_max, 18, 0)
+        self.left_panel.addWidget(self.result_max, 18, 1)
+        self.left_panel.addWidget(QLabel('[mm]'), 18, 2)
 
         # left panel: adding sensors
-        self.left_panel.addWidget(label_checkbox, 18, 0, 1, 3)
+        self.left_panel.addWidget(label_checkbox, 19, 0, 1, 3)
         ad = QHBoxLayout()
         ad.addWidget(self.action_add_box)
         ad.addWidget(self.action_del_box)
         ad.setContentsMargins(0, 0, 0, 0)
         ad_ = QWidget()
         ad_.setLayout(ad)
-        self.left_panel.addWidget(ad_, 19, 0, 1, 3)
-        self.left_panel.addWidget(self.column_checkbox, 20, 0, 1, 3)
+        self.left_panel.addWidget(ad_, 20, 0, 1, 3)
+        self.left_panel.addWidget(self.column_checkbox, 21, 0, 1, 3)
         # self.left_panel.setRowStretch(5, 1)
 
         w_left_panel = QWidget()
@@ -322,7 +330,7 @@ class CSVGraphApp(QMainWindow):
         self.average_sensor_data: dict = dict()  # empty!
         self.average_data: list = []
         self.for_histo: list = []
-        self.widget_counter: int = 21
+        self.widget_counter: int = 22
         self._chk_slave_list: list = []
 
     def open_csv(self) -> None:
@@ -443,6 +451,7 @@ class CSVGraphApp(QMainWindow):
 
         x_histo = []
         y_histo = []
+        # print(self.selected_sensor_list)
         for _sensor in self.selected_sensor_list:
             columns_to_keep = ['Elevation', _sensor]
             df_thickness = self.df_csv1.copy()
@@ -477,7 +486,7 @@ class CSVGraphApp(QMainWindow):
         self.plot_averages()
         self.plot_defaults()
 
-    def plot_averages(self):
+    def plot_averages(self) -> None:
         """ plot the averages of data according the quantity of selected sensors
         while plotting it is filled the dictionary self.average_sensor_data """
 
@@ -532,11 +541,25 @@ class CSVGraphApp(QMainWindow):
             df_histo = df_histo[df_histo['x'].notna()]  # remove NaN
             _range = (point[1], point[1] + int(self.bin_filter.text()))  # lower, upper
             df_histo = df_histo[(df_histo['y'] >= _range[0]) & (df_histo['y'] <= _range[1])]
+            self.get_all_calculations(df_histo, region)
 
             self.histo.plot_histogram(df_histo, _range, mouse_relative.x(), mouse_relative.y())
         else:
             self.plot_widget.removeItem(self.hover_label)
             self.histo.close_histo()
+
+    def get_all_calculations(self, _df: pd, interval: str) -> None:
+        """ gets all calculations using df_histo in within the range"""
+
+        self.label_results.setText(f'Interval Results: {interval}')
+        self.result_average.setText(str(round(_df.loc[:, 'x'].mean(), 8)))
+        self.result_std.setText(str(round(_df.loc[:, 'x'].std(), 8)))
+        self.result_min.setText(str(round(_df.loc[:, 'x'].min(), 8)))
+        self.result_max.setText(str(round(_df.loc[:, 'x'].max(), 8)))
+        self.result_median.setText(str(round(_df.loc[:, 'x'].median(), 8)))
+        self.result_mode.setText(str(round(_df.loc[:, 'x'].mode()[0], 8)))
+        trimmed_mean_20 = float(stats.trim_mean(_df.x, 0.2))
+        self.result_trim_20.setText(str(round(trimmed_mean_20, 8)))
 
     def plot_defaults(self) -> None:
         """ defaults for plotting """
@@ -566,13 +589,13 @@ class CSVGraphApp(QMainWindow):
         self.action_del_box.setDisabled(True)
         for w in self._chk_slave_list:
             self.left_panel.removeWidget(w)
-        self.widget_counter = 21
+        self.widget_counter = 22
         self._chk_slave_list = []
         self.main_widget.update()
 
     def add_qcombobox(self) -> None:
 
-        if self.widget_counter <= 27:
+        if self.widget_counter <= 28:
             _chk_slave = QComboBox()
             _chk_slave.currentIndexChanged.connect(self.new_sensor_to_keep)
             self.left_panel.addWidget(_chk_slave, self.widget_counter, 0, 1, 3)
