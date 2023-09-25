@@ -141,6 +141,21 @@ class CSVGraphApp(QMainWindow):
         self.y_max.setMaxLength(8)
         self.y_max.setValidator(QIntValidator())
         self.y_max.setText(self._params.plot_y_max)
+        label_results = QLabel('Interval Results:')
+        label_results.setStyleSheet('''QLabel {font-size: 14px; font-weight: bold; color: #606060;}''')
+        label_result_average = QLabel('Mean:')
+        self.result_average = QLabel('0.000000')
+        label_result_std = QLabel('Standard Deviation:')
+        self.result_std = QLabel('0.000000')
+        label_result_mode = QLabel('Mode:')
+        self.result_mode = QLabel('0.000000')
+        label_result_median = QLabel('Median:')
+        self.result_median = QLabel('0.000000')
+        label_result_min = QLabel('Min. value:')
+        self.result_min = QLabel('0.000000')
+        label_result_max = QLabel('Max. value:')
+        self.result_max = QLabel('0.000000')
+
         label_checkbox = QLabel('Sensor to plot:')
         label_checkbox.setStyleSheet('''QLabel {font-size: 14px; font-weight: bold; color: #606060;}''')
         self.column_checkbox = QComboBox()
@@ -186,17 +201,37 @@ class CSVGraphApp(QMainWindow):
         self.left_panel.addWidget(QLabel('[mm]'), 10, 2)
         # self.left_panel.addWidget(self.table_widget, 8, 0, 1, 3)
 
-        self.left_panel.addWidget(label_checkbox, 11, 0, 1, 3)
+        # left panel: plot result
+        self.left_panel.addWidget(label_results, 11, 0, 1, 3)
+        self.left_panel.addWidget(label_result_average, 12, 0)
+        self.left_panel.addWidget(self.result_average, 12, 1)
+        self.left_panel.addWidget(QLabel('[mm]'), 12, 2)
+        self.left_panel.addWidget(label_result_std, 13, 0)
+        self.left_panel.addWidget(self.result_std, 13, 1)
+        self.left_panel.addWidget(QLabel('[mm]'), 13, 2)
+        self.left_panel.addWidget(label_result_mode, 14, 0)
+        self.left_panel.addWidget(self.result_mode, 14, 1)
+        self.left_panel.addWidget(QLabel('[mm]'), 14, 2)
+        self.left_panel.addWidget(label_result_median, 15, 0)
+        self.left_panel.addWidget(self.result_median, 15, 1)
+        self.left_panel.addWidget(QLabel('[mm]'), 15, 2)
+        self.left_panel.addWidget(label_result_min, 16, 0)
+        self.left_panel.addWidget(self.result_min, 16, 1)
+        self.left_panel.addWidget(QLabel('[mm]'), 16, 2)
+        self.left_panel.addWidget(label_result_max, 17, 0)
+        self.left_panel.addWidget(self.result_max, 17, 1)
+        self.left_panel.addWidget(QLabel('[mm]'), 17, 2)
 
+        # left panel: adding sensors
+        self.left_panel.addWidget(label_checkbox, 18, 0, 1, 3)
         ad = QHBoxLayout()
         ad.addWidget(self.action_add_box)
         ad.addWidget(self.action_del_box)
         ad.setContentsMargins(0, 0, 0, 0)
         ad_ = QWidget()
         ad_.setLayout(ad)
-        self.left_panel.addWidget(ad_, 12, 0, 1, 3)
-
-        self.left_panel.addWidget(self.column_checkbox, 13, 0, 1, 3)
+        self.left_panel.addWidget(ad_, 19, 0, 1, 3)
+        self.left_panel.addWidget(self.column_checkbox, 20, 0, 1, 3)
         # self.left_panel.setRowStretch(5, 1)
 
         w_left_panel = QWidget()
@@ -287,7 +322,7 @@ class CSVGraphApp(QMainWindow):
         self.average_sensor_data: dict = dict()  # empty!
         self.average_data: list = []
         self.for_histo: list = []
-        self.widget_counter: int = 14
+        self.widget_counter: int = 21
         self._chk_slave_list: list = []
 
     def open_csv(self) -> None:
@@ -532,13 +567,13 @@ class CSVGraphApp(QMainWindow):
         self.action_del_box.setDisabled(True)
         for w in self._chk_slave_list:
             self.left_panel.removeWidget(w)
-        self.widget_counter = 14
+        self.widget_counter = 21
         self._chk_slave_list = []
         self.main_widget.update()
 
     def add_qcombobox(self) -> None:
 
-        if self.widget_counter <= 20:
+        if self.widget_counter <= 27:
             _chk_slave = QComboBox()
             _chk_slave.currentIndexChanged.connect(self.new_sensor_to_keep)
             self.left_panel.addWidget(_chk_slave, self.widget_counter, 0, 1, 3)
