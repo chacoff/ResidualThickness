@@ -440,13 +440,19 @@ class CSVGraphApp(QMainWindow):
             y_histo = y_histo + y.values.tolist()
             self.for_histo = [x_histo, y_histo]  # for histogram
 
+        self.plot_averages()
+        self.plot_defaults()
+
+    def plot_averages(self):
+        """ plot the averages of data according the quantity of selected sensors
+        while plotting it is filled the dictionary self.average_sensor_data """
+
         averaged_df: pd = self.methods.average_by_intervals_all_sensors(_data=self.average_sensor_data)
         self.average_data = averaged_df.values.tolist()
 
-        scatter_average = pg.ScatterPlotItem(size=12, pen=pg.mkPen(None), brush=pg.mkBrush([255, 128, 64, 220]))
+        scatter_average = pg.ScatterPlotItem(size=12, pen=pg.mkPen(None), brush=pg.mkBrush([253, 127, 62, 220]))
         scatter_average.setData(x=averaged_df.x, y=averaged_df.elevation_bin)
         self.plot_widget.addItem(scatter_average)
-        self.plot_defaults()
 
     def plot_clicked(self, event) -> None:
         """ originally gets the nearest average point on scene, now just clean the plot """
@@ -574,7 +580,7 @@ if __name__ == "__main__":
     qdarktheme.setup_theme('light')  # 'light' option
     pg.setConfigOption('background', QColor(248, 249, 250))
     pg.setConfigOption('foreground', 'k')
-    image_window = CSVGraphApp(' ResidualThickness - RDEsch v0.0.4j')
+    image_window = CSVGraphApp(' ResidualThickness - RDEsch v0.0.9j')
     image_window.setWindowIcon(QIcon(r'icons/chart.png'))
     image_window.show()
     image_window.showMaximized()
