@@ -3,7 +3,7 @@ import sys
 import csv
 import numpy as np
 import random
-from PyQt6.QtWidgets import QWidget, QVBoxLayout, QMainWindow, QPushButton, QLabel
+from PyQt6.QtWidgets import QWidget, QVBoxLayout, QHBoxLayout, QMainWindow, QPushButton, QLabel
 from PyQt6.QtCore import Qt
 from PyQt6.QtGui import QGuiApplication, QScreen, QColor, QPainter, QBrush, QFont
 import pyqtgraph as pg
@@ -176,16 +176,30 @@ class HistogramApp(QMainWindow):
             self.plot_widget.setLabel(label, '')
             self.plot_widget.getAxis(label).setStyle(tickFont=font)
 
-        self.plot_widget.showGrid(True, True, alpha=self._params.alpha_grid)
-        self.plot_widget.setContentsMargins(0, 0, 0, 0)
         self.title_histo = QLabel('')
         self.title_histo.setStyleSheet('''QLabel {font-size: 14px; font-weight: bold; color: #61605e;}''')
+
+        self.plot_widget.showGrid(True, True, alpha=self._params.alpha_grid)
+        self.plot_widget.setContentsMargins(0, 0, 0, 0)
+
+        self.expand_button = QPushButton('Expand')
         self.close_button = QPushButton('Close')
         self.close_button.clicked.connect(self.close_histo)
+        self.export_button = QPushButton('Export data')
+        self.save_graph_button = QPushButton('Save Graph')
+
+        menu = QHBoxLayout()
+        menu.addWidget(self.expand_button)
+        menu.addWidget(self.export_button)
+        menu.addWidget(self.save_graph_button)
+        menu.addWidget(self.close_button)
+        menu.setContentsMargins(0, 0, 8, 0)
+        menu_w = QWidget()
+        menu_w.setLayout(menu)
 
         layout.addWidget(self.title_histo, alignment=Qt.AlignmentFlag.AlignCenter)
         layout.addWidget(self.plot_widget)
-        layout.addWidget(self.close_button)
+        layout.addWidget(menu_w)
 
         self.setWindowTitle('histogram')
         self.instances.append(self)
