@@ -177,12 +177,13 @@ class HistogramApp(QMainWindow):
             self.plot_widget.getAxis(label).setStyle(tickFont=font)
 
         self.plot_widget.showGrid(True, True, alpha=self._params.alpha_grid)
+        self.plot_widget.setContentsMargins(0, 0, 0, 0)
         self.title_histo = QLabel('')
         self.title_histo.setStyleSheet('''QLabel {font-size: 14px; font-weight: bold; color: #61605e;}''')
         self.close_button = QPushButton('Close')
         self.close_button.clicked.connect(self.close_histo)
 
-        layout.addWidget(self.title_histo)
+        layout.addWidget(self.title_histo, alignment=Qt.AlignmentFlag.AlignCenter)
         layout.addWidget(self.plot_widget)
         layout.addWidget(self.close_button)
 
@@ -217,7 +218,7 @@ class HistogramApp(QMainWindow):
                                                yMin=self._params.histo_y_min,
                                                yMax=max(freqs))
 
-        self.title_histo.setText(f'Range: {_range}')
+        self.title_histo.setText(f'Elevation range: {_range}')
         # legend = self.plot_widget.addLegend()
         # legend.addItem(bars, f'Range {_range}')
 
@@ -259,8 +260,8 @@ class UIParameters:
     # Histogram plot
     histo_width: int = 424              # width of the histogram window
     histo_width_offset: int = 20        # offset from the mouse pointer
-    histo_height: int = 262             # height of the histogram window (keep golden ratio: 1.618)
-    histo_height_fix: int = 262         # maximum offset to avoid the histogram window to be outside the screen
+    histo_height: int = 263             # height of the histogram window (keep golden ratio: 1.618)
+    histo_height_fix: int = 263         # maximum offset to avoid the histogram window to be outside the screen
     histo_x_min: float = 10.0           # x_min in the histogram plot
     histo_x_max: float = 14.5           # x_max in the histogram plot
     histo_y_min: float = 0              # y_min in the histogram plot
