@@ -5,7 +5,7 @@ import numpy as np
 import random
 from PyQt6.QtWidgets import QWidget, QVBoxLayout, QMainWindow, QPushButton, QLabel
 from PyQt6.QtCore import Qt
-from PyQt6.QtGui import QGuiApplication, QScreen, QColor, QPainter, QBrush
+from PyQt6.QtGui import QGuiApplication, QScreen, QColor, QPainter, QBrush, QFont
 import pyqtgraph as pg
 import math
 
@@ -169,11 +169,20 @@ class HistogramApp(QMainWindow):
         self.central_widget.setLayout(layout)
 
         self.plot_widget = pg.PlotWidget()
-        self.plot_widget.getPlotItem().hideAxis('bottom')
-        self.plot_widget.getPlotItem().hideAxis('left')
+        font = QFont()
+        font.setPixelSize(8)
+        for label in ['top', 'right', 'bottom', 'left']:
+            # self.plot_widget.getPlotItem().hideAxis('bottom')
+            self.plot_widget.setLabel(label, '')
+            self.plot_widget.getAxis(label).setStyle(tickFont=font)
+
         self.plot_widget.showGrid(True, True, alpha=self._params.alpha_grid)
+        self.title_histo = QLabel('')
+        self.title_histo.setStyleSheet('''QLabel {font-size: 14px; font-weight: bold; color: #61605e;}''')
         self.close_button = QPushButton('Close')
         self.close_button.clicked.connect(self.close_histo)
+
+        layout.addWidget(self.title_histo)
         layout.addWidget(self.plot_widget)
         layout.addWidget(self.close_button)
 
@@ -183,7 +192,7 @@ class HistogramApp(QMainWindow):
     def plot_histogram(self, data: pd, _range: tuple, i: int, j: int):
         self.data = data
 
-        _brush = [52, 93, 205, random.randint(140, 200)]
+        _brush = [253, 127, 63, random.randint(140, 200)]  # blue: 52, 93, 205
 
         hist, bins = np.histogram(self.data.x, bins=25)
 
@@ -208,8 +217,9 @@ class HistogramApp(QMainWindow):
                                                yMin=self._params.histo_y_min,
                                                yMax=max(freqs))
 
-        legend = self.plot_widget.addLegend()
-        legend.addItem(bars, f'Range {_range}')
+        self.title_histo.setText(f'Range: {_range}')
+        # legend = self.plot_widget.addLegend()
+        # legend.addItem(bars, f'Range {_range}')
 
         j = self._methods.fixer_for_j(j)
         self.move(i+self._params.histo_width_offset, j)
@@ -247,12 +257,12 @@ class RoundedWidget(QWidget):
 
 class UIParameters:
     # Histogram plot
-    histo_width: int = 400              # width of the histogram window
+    histo_width: int = 424              # width of the histogram window
     histo_width_offset: int = 20        # offset from the mouse pointer
-    histo_height: int = 225             # height of the histogram window
-    histo_height_fix: int = 225         # maximum offset to avoid the histogram window to be outside the screen
-    histo_x_min: float = 9.0            # x_min in the histogram plot
-    histo_x_max: float = 15.0           # x_max in the histogram plot
+    histo_height: int = 262             # height of the histogram window (keep golden ratio: 1.618)
+    histo_height_fix: int = 262         # maximum offset to avoid the histogram window to be outside the screen
+    histo_x_min: float = 10.0           # x_min in the histogram plot
+    histo_x_max: float = 14.5           # x_max in the histogram plot
     histo_y_min: float = 0              # y_min in the histogram plot
     histo_y_max: float = 100            # y_max in the histogram plot: unused >> we use dynamically max(freqs)
     rounded_corner: int = 7             # number in pixels to round the corner of the histogram window
