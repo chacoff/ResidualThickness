@@ -32,7 +32,7 @@ class Methods(object):
         """ read the header of a csv file and extract titles and parameters"""
 
         with open(file_name, "r") as file:
-            csv_reader = csv.reader(file)
+            csv_reader = csv.reader(file)  # x.replace('\0', '') for x in file
 
             row_count = 0
             csv_header_data = []
