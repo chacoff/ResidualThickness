@@ -7,11 +7,11 @@ SET CONDA=C:\Users\%USERNAME%\miniconda3\Scripts
 SET PATH=%CONDA%\Scripts;%CONDA%;%PATH%
 
 rem logiciel and residual environment << local solution
-CALL activate logiciel && (
+CALL activate residual && (
 	echo sucess
 ) || (
 	echo error ... searching another environment
-	CALL activate residual
+	CALL activate logiciel
 )
 
 START pythonw main.py
