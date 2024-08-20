@@ -384,7 +384,7 @@ class CSVGraphApp(QMainWindow):
          with buttons to drop columns of every csv """
 
         _qtitle.setText(_name)
-        _header = self.methods.read_csv_header(_file, limit_row=46, titles=[0, 32, 42])
+        _header = self.methods.read_csv_header(_file, limit_row=46, titles=[0, 34, 42])
         self.populate_table(_table, _header, _file)
 
     def populate_table(self, _table_widget: QTableWidget, _data: pd, _csv: str) -> None:
