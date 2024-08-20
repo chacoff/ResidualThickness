@@ -364,8 +364,8 @@ class CSVGraphApp(QMainWindow):
             name_csv_thickness = os.path.join(data_path, name)
             name_csv_amplitude = name_csv_thickness + ' - AMP'
 
-        self.methods.handle_encoding(name_csv_thickness+'.csv')
-        self.methods.handle_encoding(name_csv_amplitude+'.csv')
+        # self.methods.handle_encoding(name_csv_thickness+'.csv')
+        # self.methods.handle_encoding(name_csv_amplitude+'.csv')
 
         self.df_csv1_name = QFileInfo(name_csv_thickness+'.csv').baseName()  # fileName() to have it with the extension
         self.read_csv_header(name_csv_thickness+'.csv', self.table_csv1, self.df_csv1_name, self.csv1_title)

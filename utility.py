@@ -67,7 +67,6 @@ class Methods(object):
     @staticmethod
     def handle_encoding(file_name: str):
         """ due to files with different encodings, we open them and re write them in the same encoding: windows-1252"""
-
         with open(file_name, 'rb') as f:
             result = chardet.detect(f.read())
             encoding = result['encoding']
@@ -82,7 +81,7 @@ class Methods(object):
     @staticmethod
     def return_dataframe(file_name: str, delimiter: str, skip: int) -> pd:
         """ return pandas dataframe with the data """
-        df = pd.read_csv(file_name, sep=delimiter, engine='python', skiprows=skip, encoding='latin-1')  # sep=r',|;'
+        df = pd.read_csv(file_name, sep=delimiter, engine='python', skiprows=skip, encoding='windows-1252')  # sep=r',|;' encoding='latin-1'
         if df.shape[1] > 9:
             n = df.shape[1] - 9
             df.drop(columns=df.columns[-n:], axis=1,  inplace=True)
