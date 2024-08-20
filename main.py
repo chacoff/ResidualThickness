@@ -158,6 +158,8 @@ class CSVGraphApp(QMainWindow):
         self.result_min = QLabel('0.000000')
         label_result_max = QLabel('Max. value:')
         self.result_max = QLabel('0.000000')
+        label_result_points = QLabel('Number of Points')
+        self.result_points = QLabel('0.000000')
 
         label_checkbox = QLabel('Sensor to plot:')
         label_checkbox.setStyleSheet('''QLabel {font-size: 14px; font-weight: bold; color: #606060;}''')
@@ -229,17 +231,20 @@ class CSVGraphApp(QMainWindow):
         self.left_panel.addWidget(label_result_max, 18, 0)
         self.left_panel.addWidget(self.result_max, 18, 1)
         self.left_panel.addWidget(QLabel('[mm]'), 18, 2)
+        self.left_panel.addWidget(label_result_points, 19, 0)
+        self.left_panel.addWidget(self.result_points, 19, 1)
+        self.left_panel.addWidget(QLabel('[pt]'), 19, 2)
 
         # left panel: adding sensors
-        self.left_panel.addWidget(label_checkbox, 19, 0, 1, 3)
+        self.left_panel.addWidget(label_checkbox, 20, 0, 1, 3)
         ad = QHBoxLayout()
         ad.addWidget(self.action_add_box)
         ad.addWidget(self.action_del_box)
         ad.setContentsMargins(0, 0, 0, 0)
         ad_ = QWidget()
         ad_.setLayout(ad)
-        self.left_panel.addWidget(ad_, 20, 0, 1, 3)
-        self.left_panel.addWidget(self.column_checkbox, 21, 0, 1, 3)
+        self.left_panel.addWidget(ad_, 21, 0, 1, 3)
+        self.left_panel.addWidget(self.column_checkbox, 22, 0, 1, 3)
         # self.left_panel.setRowStretch(5, 1)
 
         w_left_panel = QWidget()
@@ -330,7 +335,7 @@ class CSVGraphApp(QMainWindow):
         self.average_sensor_data: dict = dict()  # empty!
         self.average_data: list = []
         self.for_histo: list = []
-        self.widget_counter: int = 22
+        self.widget_counter: int = 23
         self._chk_slave_list: list = []
 
     def open_csv(self) -> None:
@@ -342,9 +347,9 @@ class CSVGraphApp(QMainWindow):
         if not file_name:
             return
 
-        self.methods.handle_encoding(file_name)
         self.methods.set_data_delimiter(file_name)
         _delimiter: str = self.methods.get_data_delimiter()
+        print(f'delimiter is: {_delimiter}')
 
         data_path = QFileInfo(file_name).absolutePath()
         is_amplitude = 'AMP' in QFileInfo(file_name).baseName()
@@ -358,6 +363,9 @@ class CSVGraphApp(QMainWindow):
             name = QFileInfo(file_name).baseName()  # .fileName()
             name_csv_thickness = os.path.join(data_path, name)
             name_csv_amplitude = name_csv_thickness + ' - AMP'
+
+        self.methods.handle_encoding(name_csv_thickness+'.csv')
+        self.methods.handle_encoding(name_csv_amplitude+'.csv')
 
         self.df_csv1_name = QFileInfo(name_csv_thickness+'.csv').baseName()  # fileName() to have it with the extension
         self.read_csv_header(name_csv_thickness+'.csv', self.table_csv1, self.df_csv1_name, self.csv1_title)
@@ -376,7 +384,7 @@ class CSVGraphApp(QMainWindow):
          with buttons to drop columns of every csv """
 
         _qtitle.setText(_name)
-        _header = self.methods.read_csv_header(_file, limit_row=46, titles=[0, 34, 42])
+        _header = self.methods.read_csv_header(_file, limit_row=46, titles=[0, 32, 42])
         self.populate_table(_table, _header, _file)
 
     def populate_table(self, _table_widget: QTableWidget, _data: pd, _csv: str) -> None:
@@ -478,8 +486,6 @@ class CSVGraphApp(QMainWindow):
             scatter_plot.setData(x=x_1, y=y)
             self.plot_widget.addItem(scatter_plot)
 
-            print(x_1)
-            print(y)
             # storing all the average by interval per sensor in a dictionary
             self.average_sensor_data[_sensor] = self.methods.average_by_intervals(_x=x_1,
                                                                                   _y=y,
@@ -566,6 +572,7 @@ class CSVGraphApp(QMainWindow):
         self.result_mode.setText(str(round(_df.loc[:, 'x'].mode()[0], 8)))
         trimmed_mean_20 = float(stats.trim_mean(_df.x, 0.2))
         self.result_trim_20.setText(str(round(trimmed_mean_20, 8)))
+        self.result_points.setText(str(_df.loc[:, 'x'].count()))
 
     def plot_defaults(self) -> None:
         """ defaults for plotting """

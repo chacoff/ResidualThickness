@@ -59,7 +59,6 @@ class Methods(object):
     @staticmethod
     def return_dataframe(file_name: str, delimiter: str, skip: int) -> pd:
         """ return pandas dataframe with the data """
-
         df = pd.read_csv(file_name, sep=delimiter, engine='python', skiprows=skip, encoding='latin-1')  # sep=r',|;'
         if df.shape[1] > 9:
             n = df.shape[1] - 9
@@ -128,6 +127,7 @@ class Methods(object):
 
         df['elevation_bin'] = pd.cut(df['y'], bins=elevation_bins, labels=elevation_bins[:-1])
         result = df.groupby('elevation_bin')['x'].apply(lambda x: np.nanmean(x)).reset_index()
+
         cols = ['x', 'elevation_bin']  # re-order to follow x, y
         result = result[cols]
         return result
@@ -320,15 +320,15 @@ class UIParameters:
     histo_width_offset: int = 20        # offset from the mouse pointer
     histo_height: int = 263             # height of the histogram window (keep golden ratio: 1.618)
     histo_height_fix: int = 263         # maximum offset to avoid the histogram window to be outside the screen
-    histo_x_min: float = 10.0           # x_min in the histogram plot
+    histo_x_min: float = 6.0            # x_min in the histogram plot
     histo_x_max: float = 14.5           # x_max in the histogram plot
     histo_y_min: float = 0              # y_min in the histogram plot
     histo_y_max: float = 100            # y_max in the histogram plot: unused >> we use dynamically max(freqs)
     rounded_corner: int = 7             # number in pixels to round the corner of the histogram window
 
     # Main Plot
-    plot_x_min: str = '10'              # x_min for the main plot
-    plot_x_max: str = '15'              # x_max for the main plot
+    plot_x_min: str = '6'               # x_min for the main plot
+    plot_x_max: str = '16'              # x_max for the main plot
     plot_y_min: str = '-10500'          # y_min for the main plot
     plot_y_max: str = '0'               # y_max for the main plot
     display_thresh: tuple = [0.10, 70]  # absolute space between mouse and point of interest to display histogram
@@ -337,4 +337,4 @@ class UIParameters:
     # Data filtering
     data_saturation: int = 100          # to filter data consider saturated
     data_max_elevation: int = 0         # max elevation corresponding data (y axis)
-    data_min_elevation: int = -10000    # min elevation corresponding data (y axis)
+    data_min_elevation: int = -12000    # min elevation corresponding data (y axis)
