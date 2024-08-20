@@ -92,31 +92,31 @@ class CSVGraphApp(QMainWindow):
         self.low_filter = QLineEdit()
         self.low_filter.setMaxLength(2)  # Set maximum length to 4 characters
         self.low_filter.setValidator(QIntValidator())  # Allow only integer input
-        self.low_filter.setText('60')
+        self.low_filter.setText(self._params.low_filter)
         self.low_filter.setToolTip('minimum is 0%')
         label_high = QLabel('High Filter:')
         self.high_filter = QLineEdit()
-        self.high_filter.setMaxLength(2)
+        self.high_filter.setMaxLength(3)
         self.high_filter.setValidator(QIntValidator())
-        self.high_filter.setText('85')
-        self.high_filter.setToolTip('maximum is 99%')
+        self.high_filter.setText(self._params.high_filter)
+        self.high_filter.setToolTip('maximum is 100%')
         label_bin = QLabel('Mean Interval:')
         self.bin_filter = QLineEdit()
         self.bin_filter.setMaxLength(4)
         self.bin_filter.setValidator(QIntValidator())
-        self.bin_filter.setText('500')
+        self.bin_filter.setText(self._params.mean_interval)
         self.bin_filter.setToolTip('Recommended value is 1000mm. Maximum is 9999mm')
         label_max_elev = QLabel('Max. elevation:')
         self.max_elev_filter = QLineEdit()
-        self.max_elev_filter.setMaxLength(2)
+        self.max_elev_filter.setMaxLength(6)
         self.max_elev_filter.setValidator(QIntValidator())
-        self.max_elev_filter.setText('0')
+        self.max_elev_filter.setText(self._params.max_elevation)
         self.max_elev_filter.setToolTip('Recommended value is 0mm')
         label_min_elev = QLabel('Min. elevation:')
         self.min_elev_filter = QLineEdit()
         self.min_elev_filter.setMaxLength(6)
         self.min_elev_filter.setValidator(QIntValidator())
-        self.min_elev_filter.setText('-10000')
+        self.min_elev_filter.setText(self._params.min_elevation)
         self.min_elev_filter.setToolTip('Recommended value is -10000mm')
 
         # Left panel plot settings
@@ -384,7 +384,11 @@ class CSVGraphApp(QMainWindow):
          with buttons to drop columns of every csv """
 
         _qtitle.setText(_name)
-        _header = self.methods.read_csv_header(_file, limit_row=46, titles=[0, 34, 42])
+        _header = self.methods.read_csv_header(_file,
+                                               limit_row=self.methods.get_XYpos(),
+                                               titles=[0,
+                                                       self.methods.get_cscan_title(),
+                                                       self.methods.get_sortie_title()])  # 46, [0, 34, 42]
         self.populate_table(_table, _header, _file)
 
     def populate_table(self, _table_widget: QTableWidget, _data: pd, _csv: str) -> None:

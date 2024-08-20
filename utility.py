@@ -16,6 +16,9 @@ class Methods(object):
         super().__init__()
         self._params = UIParameters()
         self.delimiter: str = ''
+        self.XYpos: int = 0
+        self.cscan: int = 0
+        self.sortie: int = 0
 
     def set_data_delimiter(self, file_name: str):
         """ get the delimiter in the data, most of the time is either space of comma """
@@ -24,6 +27,17 @@ class Methods(object):
 
             count: int = 0
             for line in file:
+                # Find reference for the titles
+                if 'X/Y' in line:
+                    self.XYpos = count - 1
+
+                if 'Réglages C-Scan ' in line:
+                    self.cscan = count
+
+                if 'Réglages des paramètres en sortie' in line:
+                    self.sortie = count
+
+                # Take a data sample to know understand the delimiter
                 if count == 60:  # arbitrary line 60 where i know there is data
                     line = line.replace('\0', '')  # Remove any null characters
 
@@ -40,6 +54,15 @@ class Methods(object):
 
     def get_data_delimiter(self) -> str:
         return self.delimiter
+
+    def get_XYpos(self) -> int:
+        return self.XYpos
+
+    def get_cscan_title(self) -> int:
+        return self.cscan
+
+    def get_sortie_title(self) -> int:
+        return self.sortie
 
     @staticmethod
     def handle_encoding(file_name: str):
@@ -84,7 +107,7 @@ class Methods(object):
 
                 if row_count in titles:
                     title_label = row[0].replace(";", "").replace("_", "")
-                    # print(f'---{title_label}')
+                    print(f'---{title_label}')
                 else:
                     if not len(row) < 1:
                         rows = row[0].split(":")
@@ -329,10 +352,17 @@ class UIParameters:
     # Main Plot
     plot_x_min: str = '6'               # x_min for the main plot
     plot_x_max: str = '16'              # x_max for the main plot
-    plot_y_min: str = '-10500'          # y_min for the main plot
+    plot_y_min: str = '-12000'          # y_min for the main plot
     plot_y_max: str = '0'               # y_max for the main plot
     display_thresh: tuple = [0.10, 70]  # absolute space between mouse and point of interest to display histogram
     alpha_grid: float = 0.15            # alpha value for the grid in plots (shared between main and histogram plot)
+
+    # Default filters
+    low_filter: str = '80'              # Low filter in percentage for the input data
+    high_filter: str = '99'             # high filter in percentage for the input data
+    mean_interval: str = '500'          # mean interval to calculate the data
+    max_elevation: str = '0'            # max elevation in data
+    min_elevation: str = '-12000'       # min elevation in data
 
     # Data filtering
     data_saturation: int = 100          # to filter data consider saturated
