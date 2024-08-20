@@ -2,7 +2,7 @@ import sys
 import csv
 from PyQt6.QtWidgets import QApplication, QMainWindow, QFileDialog, QPushButton, QVBoxLayout, QHBoxLayout, QWidget, \
     QMessageBox, QLabel, QGridLayout, QTableWidget, QHeaderView, QTableWidgetItem, QLineEdit, QComboBox, QSizePolicy
-from PyQt6.QtCore import Qt, QSize, QFileInfo, QPointF
+from PyQt6.QtCore import Qt, QSize, QFileInfo, QPointF, pyqtSignal, pyqtSlot
 from PyQt6.QtGui import QAction, QColor, QIcon, QPixmap, QFont, QIntValidator, QCursor
 import pyqtgraph as pg
 import qdarktheme
@@ -11,16 +11,16 @@ import numpy as np
 import os
 from scipy import stats
 from utility import Methods, HistogramApp, UIParameters
+import threading
 
 
 class CSVGraphApp(QMainWindow):
-    def __init__(self, _title: str):
+    def __init__(self, ):
         super().__init__()
-
-        self.setWindowTitle(_title)
         font = QFont()
         font.setPixelSize(16)
         self._params = UIParameters()
+        self.setWindowTitle(f' ResidualThickness - {self._params.title_version}')
 
         # GUI ----------
         main = QVBoxLayout()
@@ -451,6 +451,7 @@ class CSVGraphApp(QMainWindow):
         self.selected_sensor_list = list(_temp_dict.values())
 
     def plot_data(self) -> None:
+        """ plot data """
 
         if self.df_csv1 is None or self.df_csv2 is None:
             self.error_box('No data.\n\n'
@@ -646,13 +647,12 @@ class CSVGraphApp(QMainWindow):
 
 
 if __name__ == "__main__":
-    params = UIParameters()
 
     app = QApplication(sys.argv)
     qdarktheme.setup_theme('light')  # 'light' option
     pg.setConfigOption('background', QColor(248, 249, 250))
     pg.setConfigOption('foreground', 'k')
-    image_window = CSVGraphApp(f' ResidualThickness - {params.title_version}')
+    image_window = CSVGraphApp()
     image_window.setWindowIcon(QIcon(r'icons/chart.png'))
     image_window.show()
     image_window.showMaximized()
