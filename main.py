@@ -603,13 +603,13 @@ class CSVGraphApp(QMainWindow):
         self.action_del_box.setDisabled(True)
         for w in self._chk_slave_list:
             self.left_panel.removeWidget(w)
-        self.widget_counter = 22
+        self.widget_counter = self._params.current_labels
         self._chk_slave_list = []
         self.main_widget.update()
 
     def add_qcombobox(self) -> None:
 
-        if self.widget_counter <= 28:
+        if self.widget_counter <= self._params.current_widgets:
             _chk_slave = QComboBox()
             _chk_slave.currentIndexChanged.connect(self.new_sensor_to_keep)
             self.left_panel.addWidget(_chk_slave, self.widget_counter, 0, 1, 3)

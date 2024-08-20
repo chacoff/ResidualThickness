@@ -337,8 +337,10 @@ class RoundedWidget(QWidget):
 
 
 class UIParameters:
-    # Titles
+    # Titles & Widgets
     title_version: str = 'RDEsch v0.3b'     # title and version of the software
+    current_labels: int = 22                # current labels, i.e. widgets to start adding sub-plots
+    current_widgets: int = 29               # max counter of widgets to add a max of 8 sub-plots
 
     # Histogram plot
     histo_width: int = 424                  # width of the histogram window
