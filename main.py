@@ -364,9 +364,6 @@ class CSVGraphApp(QMainWindow):
             name_csv_thickness = os.path.join(data_path, name)
             name_csv_amplitude = name_csv_thickness + ' - AMP'
 
-        # self.methods.handle_encoding(name_csv_thickness+'.csv')
-        # self.methods.handle_encoding(name_csv_amplitude+'.csv')
-
         self.df_csv1_name = QFileInfo(name_csv_thickness+'.csv').baseName()  # fileName() to have it with the extension
         self.read_csv_header(name_csv_thickness+'.csv', self.table_csv1, self.df_csv1_name, self.csv1_title)
         self.df_csv1 = self.methods.return_dataframe(name_csv_thickness+'.csv', delimiter=_delimiter, skip=47)
@@ -649,12 +646,13 @@ class CSVGraphApp(QMainWindow):
 
 
 if __name__ == "__main__":
+    params = UIParameters()
 
     app = QApplication(sys.argv)
     qdarktheme.setup_theme('light')  # 'light' option
     pg.setConfigOption('background', QColor(248, 249, 250))
     pg.setConfigOption('foreground', 'k')
-    image_window = CSVGraphApp(' ResidualThickness - RDEsch v0.0.9j')
+    image_window = CSVGraphApp(f' ResidualThickness - {params.title_version}')
     image_window.setWindowIcon(QIcon(r'icons/chart.png'))
     image_window.show()
     image_window.showMaximized()
