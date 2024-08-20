@@ -342,6 +342,10 @@ class CSVGraphApp(QMainWindow):
         if not file_name:
             return
 
+        self.methods.handle_encoding(file_name)
+        self.methods.set_data_delimiter(file_name)
+        _delimiter: str = self.methods.get_data_delimiter()
+
         data_path = QFileInfo(file_name).absolutePath()
         is_amplitude = 'AMP' in QFileInfo(file_name).baseName()
 
@@ -357,11 +361,11 @@ class CSVGraphApp(QMainWindow):
 
         self.df_csv1_name = QFileInfo(name_csv_thickness+'.csv').baseName()  # fileName() to have it with the extension
         self.read_csv_header(name_csv_thickness+'.csv', self.table_csv1, self.df_csv1_name, self.csv1_title)
-        self.df_csv1 = self.methods.return_dataframe(name_csv_thickness+'.csv', skip=47)
+        self.df_csv1 = self.methods.return_dataframe(name_csv_thickness+'.csv', delimiter=_delimiter, skip=47)
 
         self.df_csv2_name = QFileInfo(name_csv_amplitude+'.csv').baseName()  # fileName() to have it with the extension
         self.read_csv_header(name_csv_amplitude+'.csv', self.table_csv2, self.df_csv2_name, self.csv2_title)
-        self.df_csv2 = self.methods.return_dataframe(name_csv_amplitude+'.csv', skip=47)
+        self.df_csv2 = self.methods.return_dataframe(name_csv_amplitude+'.csv', delimiter=_delimiter, skip=47)
 
         self.populate_checkbox(self.column_checkbox)
         self.action_add_box.setDisabled(False)
@@ -474,6 +478,8 @@ class CSVGraphApp(QMainWindow):
             scatter_plot.setData(x=x_1, y=y)
             self.plot_widget.addItem(scatter_plot)
 
+            print(x_1)
+            print(y)
             # storing all the average by interval per sensor in a dictionary
             self.average_sensor_data[_sensor] = self.methods.average_by_intervals(_x=x_1,
                                                                                   _y=y,

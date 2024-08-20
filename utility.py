@@ -8,18 +8,59 @@ from PyQt6.QtCore import Qt
 from PyQt6.QtGui import QGuiApplication, QScreen, QColor, QPainter, QBrush, QFont
 import pyqtgraph as pg
 import math
+import chardet
 
 
 class Methods(object):
     def __init__(self):
         super().__init__()
         self._params = UIParameters()
+        self.delimiter: str = ''
+
+    def set_data_delimiter(self, file_name: str):
+        """ get the delimiter in the data, most of the time is either space of comma """
+
+        with open(file_name, 'r', encoding='windows-1252', newline='') as file:
+
+            count: int = 0
+            for line in file:
+                if count == 60:  # arbitrary line 60 where i know there is data
+                    line = line.replace('\0', '')  # Remove any null characters
+
+                    if ',' in line:
+                        self.delimiter = ','
+                    elif ' ' in line:
+                        self.delimiter = ' '
+                    else:
+                        ...
+
+                    break
+
+                count += 1
+
+    def get_data_delimiter(self) -> str:
+        return self.delimiter
 
     @staticmethod
-    def return_dataframe(file_name: str, skip: int) -> pd:
+    def handle_encoding(file_name: str):
+        """ due to files with different encodings, we open them and re write them in the same encoding: windows-1252"""
+
+        with open(file_name, 'rb') as f:
+            result = chardet.detect(f.read())
+            encoding = result['encoding']
+            print(f"Detected encoding: {encoding}")
+
+        with open(file_name, 'r', encoding=encoding, newline='') as f:
+            data = f.read()
+
+        with open(file_name, 'w', encoding='windows-1252', newline='') as f:
+            f.write(data)
+
+    @staticmethod
+    def return_dataframe(file_name: str, delimiter: str, skip: int) -> pd:
         """ return pandas dataframe with the data """
 
-        df = pd.read_csv(file_name, sep=r',|;', engine='python', skiprows=skip, encoding='latin-1')
+        df = pd.read_csv(file_name, sep=delimiter, engine='python', skiprows=skip, encoding='latin-1')  # sep=r',|;'
         if df.shape[1] > 9:
             n = df.shape[1] - 9
             df.drop(columns=df.columns[-n:], axis=1,  inplace=True)
@@ -31,8 +72,10 @@ class Methods(object):
     def read_csv_header(file_name: str, limit_row: int, titles: list) -> list:
         """ read the header of a csv file and extract titles and parameters"""
 
-        with open(file_name, "r") as file:
-            csv_reader = csv.reader(file)  # x.replace('\0', '') for x in file
+        with open(file_name, 'r') as file:
+            # csv_reader = csv.reader(file)
+            file_pre_process = (line.replace('\0', '') for line in file)
+            csv_reader = csv.reader(file_pre_process)
 
             row_count = 0
             csv_header_data = []
@@ -44,12 +87,13 @@ class Methods(object):
                     title_label = row[0].replace(";", "").replace("_", "")
                     # print(f'---{title_label}')
                 else:
-                    rows = row[0].split(":")
-                    param = rows[0]
-                    value = rows[1]
-                    param_label = param.strip()
-                    value_label = value.strip().replace(";", "")
-                    csv_header_data.append((param_label, value_label))
+                    if not len(row) < 1:
+                        rows = row[0].split(":")
+                        param = rows[0]
+                        value = rows[1]
+                        param_label = param.strip()
+                        value_label = value.strip().replace(";", "")
+                        csv_header_data.append((param_label, value_label))
                 row_count += 1
 
         return csv_header_data
