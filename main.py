@@ -11,12 +11,14 @@ import numpy as np
 import os
 from scipy import stats
 from utility import Methods, HistogramApp, UIParameters
-import threading
+from spinner import Overlay, EmitSignal
+import time
 
 
 class CSVGraphApp(QMainWindow):
     def __init__(self, ):
         super().__init__()
+
         font = QFont()
         font.setPixelSize(16)
         self._params = UIParameters()
@@ -310,6 +312,10 @@ class CSVGraphApp(QMainWindow):
         self.main_widget = QWidget()
         self.main_widget.setLayout(main)
         self.setCentralWidget(self.main_widget)
+
+        self.overlay = Overlay(self.centralWidget())
+        self.overlay.hide()
+
         self.statusBar().showMessage(f"Ready.")
         # GUI ----------
 
@@ -349,7 +355,7 @@ class CSVGraphApp(QMainWindow):
 
         self.methods.set_data_delimiter(file_name)
         _delimiter: str = self.methods.get_data_delimiter()
-        print(f'delimiter is: {_delimiter}')
+        # print(f'delimiter is: {_delimiter}')
 
         data_path = QFileInfo(file_name).absolutePath()
         is_amplitude = 'AMP' in QFileInfo(file_name).baseName()
@@ -453,6 +459,8 @@ class CSVGraphApp(QMainWindow):
     def plot_data(self) -> None:
         """ plot data """
 
+        self.overlay.show()
+
         if self.df_csv1 is None or self.df_csv2 is None:
             self.error_box('No data.\n\n'
                            'Please, first load data to process before trying to plot.\n\n'
@@ -499,6 +507,7 @@ class CSVGraphApp(QMainWindow):
 
         self.plot_averages()
         self.plot_defaults()
+        self.overlay.emitter.trigger_signal()
 
     def plot_averages(self) -> None:
         """ plot the averages of data according the quantity of selected sensors
@@ -644,6 +653,10 @@ class CSVGraphApp(QMainWindow):
         dlg.setWindowFlags(self.windowFlags() | Qt.WindowType.FramelessWindowHint)
         dlg.setText(message)
         dlg.exec()
+
+    def resizeEvent(self, event):
+        self.overlay.resize(event.size())
+        event.accept()
 
 
 if __name__ == "__main__":

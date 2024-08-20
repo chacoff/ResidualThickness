@@ -70,7 +70,7 @@ class Methods(object):
         with open(file_name, 'rb') as f:
             result = chardet.detect(f.read())
             encoding = result['encoding']
-            print(f"Detected encoding: {encoding}")
+            # print(f"Detected encoding: {encoding}")
 
         with open(file_name, 'r', encoding=encoding, newline='') as f:
             data = f.read()
@@ -106,7 +106,7 @@ class Methods(object):
 
                 if row_count in titles:
                     title_label = row[0].replace(";", "").replace("_", "")
-                    print(f'---{title_label}')
+                    # print(f'---{title_label}')
                 else:
                     if not len(row) < 1:
                         rows = row[0].split(":")
