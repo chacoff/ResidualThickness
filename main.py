@@ -257,12 +257,15 @@ class CSVGraphApp(QMainWindow):
         # Central Panel
         central_panel = QVBoxLayout()
         toolbar = self.addToolBar('menu')
-        self.load_csv1 = QAction(QIcon(r'icons/csv-file.png'), 'Load CSV with Thickness or Amplitude data', self)
+        # self.load_csv1 = QAction(QIcon(r'icons/csv-file.png'), 'Load CSV with Thickness or Amplitude data', self)
+        self.load_csv1 = QAction("Browse Data", self)
         self.load_csv1.triggered.connect(self.open_csv)
-        self.plot_button = QAction(QIcon(r'icons/plot-graph.png'), 'Plot Data', self)
+        # self.plot_button = QAction(QIcon(r'icons/plot-graph.png'), 'Plot Data', self)
+        self.plot_button = QAction("Plot Data", self)
         self.plot_button.triggered.connect(self.plot_data)
         self.plot_button.setShortcuts(['Return', 'Enter'])
-        self.plot_clear = QAction(QIcon(r'icons/clear.png'), 'Clear plot and data', self)
+        # self.plot_clear = QAction(QIcon(r'icons/clear.png'), 'Clear plot and data', self)
+        self.plot_clear = QAction('Clear Plot', self)
         self.plot_clear.triggered.connect(self.clear_plot)
 
         toolbar.addAction(self.load_csv1)
@@ -270,11 +273,34 @@ class CSVGraphApp(QMainWindow):
         toolbar.addAction(self.plot_clear)
         toolbar.setMovable(False)
         toolbar.setIconSize(QSize(32, 32))
-        toolbar.setStyleSheet(
-            "QToolBar { background: transparent; border: none; height: 64px;}"
-            "QToolBar QToolButton { background: transparent; border: none; }"
-            "QToolBar QToolButton::hover { background: rgba(255, 255, 255, 1); }"
-        )
+        toolbar.setStyleSheet('''
+                    QToolBar {
+                        border: 1px;
+                        spacing: 6px;
+                        margin-top: 6px;
+                        padding-top: 4px;
+                        background: transparent; 
+                        border: none; 
+                        height: 64px;
+                    }
+
+                    QToolBar QToolButton {
+                        font-size: 14px;
+                        background-color: #d3d3d3;
+                        padding: 6px;
+                        border: none;
+                        border-radius: 4px;
+                        color: #333333;
+                    }
+
+                    QToolBar QToolButton:hover {
+                        background-color: #c0c0c0;
+                    }
+
+                    QToolBar QToolButton:pressed {
+                        background-color: #a8a8a8;
+                    }
+                ''')
 
         self.plot_widget = pg.PlotWidget()
         self.hover_label = pg.TextItem(anchor=(1, 0),
