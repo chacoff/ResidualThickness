@@ -8,6 +8,7 @@ importlib-metadata==6.8.0
 importlib-resources==6.0.1
 kiwisolver==1.4.4
 matplotlib==3.7.2
+nuitka==2.4.7
 numpy==1.25.2
 packaging==23.1
 pandas==2.0.3
