@@ -1,5 +1,6 @@
 altgraph==0.17.4
 contourpy==1.1.0
+chardet==5.2.0
 cycler==0.11.0
 darkdetect==0.7.1
 fonttools==4.42.0
