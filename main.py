@@ -14,6 +14,7 @@ from methods import Methods
 from progressSpinner import Overlay
 from parameters import UIParameters
 from histogramWidget import HistogramApp
+from threading import Thread
 
 
 class CSVGraphApp(QMainWindow):
@@ -314,11 +315,13 @@ class CSVGraphApp(QMainWindow):
         self.main_widget.setLayout(main)
         self.setCentralWidget(self.main_widget)
 
+        self.statusBar().showMessage(f"Ready.")
+        # self.showMaximized()  # TODO commented while i fix the centering of the spinner
+        # GUI ----------
+
+        # Spinner ----------
         self.overlay = Overlay(self.centralWidget())
         self.overlay.hide()
-
-        self.statusBar().showMessage(f"Ready.")
-        # GUI ----------
 
         # Variables ----------
         self.methods = Methods()
@@ -354,6 +357,12 @@ class CSVGraphApp(QMainWindow):
         if not file_name:
             return
 
+        t0 = Thread(target=self.process_open_csv, name='open', args=(file_name,))
+        t0.start()
+        t0.join()
+
+    def process_open_csv(self, file_name: str) -> None:
+
         self.methods.set_data_delimiter(file_name)
         _delimiter: str = self.methods.get_data_delimiter()
         # print(f'delimiter is: {_delimiter}')
@@ -371,17 +380,26 @@ class CSVGraphApp(QMainWindow):
             name_csv_thickness = os.path.join(data_path, name)
             name_csv_amplitude = name_csv_thickness + ' - AMP'
 
-        self.df_csv1_name = QFileInfo(name_csv_thickness+'.csv').baseName()  # fileName() to have it with the extension
-        self.read_csv_header(name_csv_thickness+'.csv', self.table_csv1, self.df_csv1_name, self.csv1_title)
-        self.df_csv1 = self.methods.return_dataframe(name_csv_thickness+'.csv', delimiter=_delimiter, skip=47)
-
-        self.df_csv2_name = QFileInfo(name_csv_amplitude+'.csv').baseName()  # fileName() to have it with the extension
-        self.read_csv_header(name_csv_amplitude+'.csv', self.table_csv2, self.df_csv2_name, self.csv2_title)
-        self.df_csv2 = self.methods.return_dataframe(name_csv_amplitude+'.csv', delimiter=_delimiter, skip=47)
+        t1 = Thread(target=self.process_csv1_thickness, name='csv2', args=(name_csv_thickness, _delimiter))
+        t2 = Thread(target=self.process_csv2_amplitude, name='csv2', args=(name_csv_amplitude, _delimiter))
+        t1.start()
+        t2.start()
+        t1.join()
+        t2.join()
 
         self.populate_checkbox(self.column_checkbox)
         self.action_add_box.setDisabled(False)
         self.action_del_box.setDisabled(False)
+
+    def process_csv1_thickness(self, name_csv_thickness: str, _delimiter: str) -> None:
+        self.df_csv1_name = QFileInfo(name_csv_thickness + '.csv').baseName()  # fileName() to have it with the extension
+        self.read_csv_header(name_csv_thickness + '.csv', self.table_csv1, self.df_csv1_name, self.csv1_title)
+        self.df_csv1 = self.methods.return_dataframe(name_csv_thickness + '.csv', delimiter=_delimiter, skip=47)
+
+    def process_csv2_amplitude(self, name_csv_amplitude: str, _delimiter: str):
+        self.df_csv2_name = QFileInfo(name_csv_amplitude + '.csv').baseName()  # fileName() to have it with the extension
+        self.read_csv_header(name_csv_amplitude + '.csv', self.table_csv2, self.df_csv2_name, self.csv2_title)
+        self.df_csv2 = self.methods.return_dataframe(name_csv_amplitude + '.csv', delimiter=_delimiter, skip=47)
 
     def read_csv_header(self, _file: str, _table: QTableWidget, _name: str, _qtitle: QLabel) -> None:
         """ populates tables with the header parameters from each CSV file and populate the table
@@ -669,6 +687,5 @@ if __name__ == "__main__":
     image_window = CSVGraphApp()
     image_window.setWindowIcon(QIcon(r'icons/chart.png'))
     image_window.show()
-    image_window.showMaximized()
     HistogramApp.instances.append(image_window)
     sys.exit(app.exec())

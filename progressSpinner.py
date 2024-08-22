@@ -21,7 +21,7 @@ class Overlay(QWidget):
         painter = QPainter()
         painter.begin(self)
         painter.setRenderHint(QPainter.RenderHint.Antialiasing)
-        painter.fillRect(event.rect(), QBrush(QColor(255, 255, 255, 127)))
+        painter.fillRect(event.rect(), QBrush(QColor(255, 255, 255, 0)))  # last value is the halo for spinner
         painter.setPen(QPen(Qt.PenStyle.NoPen))
 
         for i in range(8):
@@ -45,7 +45,7 @@ class Overlay(QWidget):
         self.counter += 1
         self.update()
         self.emitter.signal.connect(self.receiver.update_status)
-        if self.counter == 80 or self.receiver.get_status():
+        if self.counter == 40 or self.receiver.get_status():
             print(self.receiver.get_status())
             self.killTimer(self.timer)
             self.hide()
@@ -72,7 +72,6 @@ class ReceiveSignal(QWidget):
         self.status: bool = False
 
     def update_status(self, message) -> None:
-        print('here')
         self.status = message
 
     def get_status(self) -> bool:
