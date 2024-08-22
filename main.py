@@ -10,9 +10,10 @@ import pandas as pd
 import numpy as np
 import os
 from scipy import stats
-from utility import Methods, HistogramApp, UIParameters
-from spinner import Overlay, EmitSignal
-import time
+from methods import Methods
+from progressSpinner import Overlay
+from parameters import UIParameters
+from histogramWidget import HistogramApp
 
 
 class CSVGraphApp(QMainWindow):
