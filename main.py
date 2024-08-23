@@ -258,18 +258,21 @@ class CSVGraphApp(QMainWindow):
         central_panel = QVBoxLayout()
         toolbar = self.addToolBar('menu')
         # self.load_csv1 = QAction(QIcon(r'icons/csv-file.png'), 'Load CSV with Thickness or Amplitude data', self)
-        self.load_csv1 = QAction("Browse Data", self)
+        self.load_csv1 = QAction('Browse Data', self)
         self.load_csv1.triggered.connect(self.open_csv)
         # self.plot_button = QAction(QIcon(r'icons/plot-graph.png'), 'Plot Data', self)
-        self.plot_button = QAction("Plot Data", self)
+        self.plot_button = QAction('Plot Data', self)
         self.plot_button.triggered.connect(self.plot_data)
         self.plot_button.setShortcuts(['Return', 'Enter'])
         # self.plot_clear = QAction(QIcon(r'icons/clear.png'), 'Clear plot and data', self)
+        self.plot_export = QAction('Export Statistics', self)
+        self.plot_export.triggered.connect(self.export_statistics)
         self.plot_clear = QAction('Clear Plot', self)
         self.plot_clear.triggered.connect(self.clear_plot)
 
         toolbar.addAction(self.load_csv1)
         toolbar.addAction(self.plot_button)
+        toolbar.addAction(self.plot_export)
         toolbar.addAction(self.plot_clear)
         toolbar.setMovable(False)
         toolbar.setIconSize(QSize(32, 32))
@@ -661,6 +664,9 @@ class CSVGraphApp(QMainWindow):
         self.widget_counter = self._params.current_labels
         self._chk_slave_list = []
         self.main_widget.update()
+
+    def export_statistics(self):
+        ...
 
     def add_qcombobox(self) -> None:
 

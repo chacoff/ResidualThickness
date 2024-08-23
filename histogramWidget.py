@@ -3,10 +3,12 @@ import sys
 import csv
 import numpy as np
 import random
-from PyQt6.QtWidgets import QWidget, QVBoxLayout, QHBoxLayout, QMainWindow, QPushButton, QLabel
+import os
+from PyQt6.QtWidgets import QWidget, QVBoxLayout, QHBoxLayout, QMainWindow, QPushButton, QLabel, QFileDialog, QMessageBox
 from PyQt6.QtCore import Qt
 from PyQt6.QtGui import QGuiApplication, QScreen, QColor, QPainter, QBrush, QFont
 import pyqtgraph as pg
+from pyqtgraph.exporters import ImageExporter
 import math
 import chardet
 from parameters import UIParameters
@@ -48,7 +50,9 @@ class HistogramApp(QMainWindow):
         self.close_button = QPushButton('Close')
         self.close_button.clicked.connect(self.close_histo)
         self.export_button = QPushButton('Export data')
+        self.export_button.clicked.connect(self.export_histo)
         self.save_graph_button = QPushButton('Save Graph')
+        self.save_graph_button.clicked.connect(self.export_histo_image)
 
         menu = QHBoxLayout()
         menu.addWidget(self.expand_button)
@@ -111,8 +115,40 @@ class HistogramApp(QMainWindow):
 
         self.move(x, y)
 
+    def export_histo(self):
+        if self.data is None:
+            QMessageBox.warning(self, "No Data", "There is no data to export.")
+            return
+
+        file_path, _ = QFileDialog.getSaveFileName(self, "Save Histogram Data", os.getenv('HOME'), "CSV Files (*.csv)")
+
+        if file_path:
+            hist, bins = np.histogram(self.data.x, bins=25)
+            bin_centers = (bins[:-1] + bins[1:]) / 2
+
+            with open(file_path, mode='w', newline='') as file:
+                writer = csv.writer(file)
+                writer.writerow(["Bin Center", "Frequency"])
+                for bin_center, freq in zip(bin_centers, hist):
+                    writer.writerow([bin_center, freq])
+
+            # QMessageBox.information(self, "Export Successful", f"Histogram data has been exported to {file_path}.")
+
+    def export_histo_image(self):
+        file_path, _ = QFileDialog.getSaveFileName(self, "Save Histogram Image", os.getenv('HOME'),
+                                                   "PNG Files (*.png);;JPEG Files (*.jpg);;BMP Files (*.bmp)")
+
+        if file_path:
+            exporter = ImageExporter(self.plot_widget.plotItem)
+
+            original_width = exporter.parameters()['width']
+            exporter.parameters()['width'] = original_width * 4
+
+            exporter.export(file_path)
+            # QMessageBox.information(self, "Export Successful", f"Histogram image has been saved to {file_path}.")
+
     def close_histo(self) -> None:
-        self.close()
+            self.close()
 
 
 class RoundedWidget(QWidget):
