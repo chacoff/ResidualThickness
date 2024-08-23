@@ -46,7 +46,7 @@ class Overlay(QWidget):
         self.update()
         self.emitter.signal.connect(self.receiver.update_status)
         if self.counter == 40 or self.receiver.get_status():
-            print(self.receiver.get_status())
+            # print(self.receiver.get_status())
             self.killTimer(self.timer)
             self.hide()
             self.receiver.set_status(False)
@@ -63,7 +63,7 @@ class EmitSignal(QWidget):
 
     def emit_signal(self):
         self.signal.emit(True)
-        print("Emitted signal")
+        # print("Emitted signal")
 
 
 class ReceiveSignal(QWidget):

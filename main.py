@@ -14,6 +14,7 @@ from methods import Methods
 from progressSpinner import Overlay
 from parameters import UIParameters
 from histogramWidget import HistogramApp
+from dataPlot import SensorData
 from threading import Thread
 
 
@@ -374,8 +375,9 @@ class CSVGraphApp(QMainWindow):
         self.average_sensor_data: dict = dict()  # empty!
         self.average_data: list = []
         self.for_histo: list = []
-        self.widget_counter: int = 23
+        self.widget_counter: int = self._params.current_labels
         self._chk_slave_list: list = []
+        self.sensor_data_list: list = []
 
     def open_csv(self) -> None:
 
@@ -521,15 +523,15 @@ class CSVGraphApp(QMainWindow):
 
         x_histo = []
         y_histo = []
-        # print(self.selected_sensor_list)
+        sensor_data_list = []
+        print(f'Plot Begin: {len(sensor_data_list)}')
+        print(f'Selected sensors: {len(self.selected_sensor_list)}')
         for _sensor in self.selected_sensor_list:
             columns_to_keep = ['Elevation', _sensor]
             df_thickness = self.df_csv1.copy()
             df_amplitude = self.df_csv2.copy()
             df_thickness = df_thickness[columns_to_keep]
             df_amplitude = df_amplitude[columns_to_keep]
-
-            # TODO: a filter to keep data between elevations -10K and 0. parameters exist but not the UI input fields
 
             filtered_thickness = self.methods.apply_filter(df_thickness,
                                                            df_amplitude,
@@ -540,6 +542,10 @@ class CSVGraphApp(QMainWindow):
             x_1 = filtered_thickness[_sensor]  # before: self.selected_sensor
             y = df_thickness.Elevation
             color = self.methods.give_me_a_color(_sensor)
+
+            sensor_data = SensorData(sensor_name=_sensor, x_data=x_1, y_data=y)
+            sensor_data_list.append(sensor_data)
+
             scatter_plot = pg.ScatterPlotItem(size=2, pen=pg.mkPen(None), brush=pg.mkBrush(color + [64]))
             scatter_plot.setData(x=x_1, y=y)
             self.plot_widget.addItem(scatter_plot)
@@ -556,6 +562,8 @@ class CSVGraphApp(QMainWindow):
         self.plot_averages()
         self.plot_defaults()
         self.overlay.emitter.trigger_signal()
+        self.sensor_data_list = sensor_data_list.copy()
+        print(f'Plot End: {len(self.sensor_data_list)}')
 
     def plot_averages(self) -> None:
         """ plot the averages of data according the quantity of selected sensors
@@ -663,10 +671,22 @@ class CSVGraphApp(QMainWindow):
             self.left_panel.removeWidget(w)
         self.widget_counter = self._params.current_labels
         self._chk_slave_list = []
+        self.sensor_data_list = []
+        self.selected_sensor_list = []
         self.main_widget.update()
 
     def export_statistics(self):
-        ...
+        if not self.sensor_data_list:
+            print(f'Export Begin: {len(self.sensor_data_list)}')
+            self.error_box('No data to export.\n\n'
+                           'Please, first load data to process, plot and then export.\n\n'
+                           'Pay attention you might need to load 2 csv before attempting to plot.')
+            return
+
+        print(f'Export Begin: {len(self.sensor_data_list)}')
+        for sensor_data in self.sensor_data_list:
+            # print(f"Sensor: {sensor_data.sensor_name}, X Data: {sensor_data.x_data}, Y Data: {sensor_data.y_data}")
+            print(f'Export Sensor: {sensor_data.sensor_name}')
 
     def add_qcombobox(self) -> None:
 
