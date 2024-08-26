@@ -22,9 +22,26 @@ class CSVGraphApp(QMainWindow):
     def __init__(self, ):
         super().__init__()
 
+        # Classes ------------
+        self._params = UIParameters()
+        self.methods = Methods()
+        self.histo = HistogramApp()
+
+        # Variables ----------
+        self.df_csv1: pd = None  # csv thickness to plot
+        self.df_csv1_name: str = 'Thickness'
+        self.df_csv2: pd = None  # csv AMP (amplitude) for filtering
+        self.df_csv2_name: str = 'Amplitude'
+        self.selected_sensor_list: list = []
+        self.average_sensor_data: dict = dict()  # empty!
+        self.average_data: list = []
+        self.for_histo: list = []
+        self.widget_counter: int = self._params.current_labels
+        self.widget_init: int = self._params.current_widgets
+
+        # UI Title
         font = QFont()
         font.setPixelSize(16)
-        self._params = UIParameters()
         self.setWindowTitle(f' ResidualThickness - {self._params.title_version}')
 
         # GUI ----------
@@ -168,14 +185,17 @@ class CSVGraphApp(QMainWindow):
 
         label_checkbox = QLabel('Sensor to plot:')
         label_checkbox.setStyleSheet('''QLabel {font-size: 14px; font-weight: bold; color: #606060;}''')
-        self.column_checkbox = QComboBox()
-        self.column_checkbox.currentIndexChanged.connect(self.selection_master_combobox)
-        self.action_add_box = QPushButton('add sensor')
-        self.action_add_box.clicked.connect(self.add_qcombobox)
-        self.action_add_box.setDisabled(True)
-        self.action_del_box = QPushButton('remove sensor')
-        self.action_del_box.clicked.connect(self.remove_qcombobox)
-        self.action_del_box.setDisabled(True)
+        # self.column_checkbox = QComboBox()
+        # self.column_checkbox.currentIndexChanged.connect(self.selection_master_combobox)
+        self.action_enable_default_box = QPushButton('default')
+        # self.action_enable_default_box.clicked.connect(self.enable_default_box)
+        self.action_enable_default_box.setDisabled(True)
+        self.action_enable_all_box = QPushButton('enable all')
+        # self.action_enable_all_box.clicked.connect(self.enable_all_box)
+        self.action_enable_all_box.setDisabled(True)
+        self.action_disable_all_box = QPushButton('disable all')
+        # self.action_disable_all_box.clicked.connect(self.disable_all_box)
+        self.action_disable_all_box.setDisabled(True)
 
         self.left_panel.setAlignment(Qt.AlignmentFlag.AlignTop)
         self.left_panel.setContentsMargins(0, 8, 0, 0)
@@ -243,14 +263,16 @@ class CSVGraphApp(QMainWindow):
         # left panel: adding sensors
         self.left_panel.addWidget(label_checkbox, 20, 0, 1, 3)
         ad = QHBoxLayout()
-        ad.addWidget(self.action_add_box)
-        ad.addWidget(self.action_del_box)
+        ad.addWidget(self.action_enable_default_box)
+        ad.addWidget(self.action_enable_all_box)
+        ad.addWidget(self.action_disable_all_box)
         ad.setContentsMargins(0, 0, 0, 0)
         ad_ = QWidget()
         ad_.setLayout(ad)
         self.left_panel.addWidget(ad_, 21, 0, 1, 3)
-        self.left_panel.addWidget(self.column_checkbox, 22, 0, 1, 3)
+        # self.left_panel.addWidget(self.column_checkbox, 22, 0, 1, 3)
         # self.left_panel.setRowStretch(5, 1)
+        self.populate_sensor_combo_boxes()
 
         w_left_panel = QWidget()
         w_left_panel.setLayout(self.left_panel)
@@ -353,32 +375,6 @@ class CSVGraphApp(QMainWindow):
         self.overlay = Overlay(self.centralWidget())
         self.overlay.hide()
 
-        # Variables ----------
-        self.methods = Methods()
-        self.histo = HistogramApp()
-        self.df_csv1: pd = None  # csv thickness to plot
-        self.df_csv1_name: str = 'Thickness'
-        self.df_csv2: pd = None  # csv AMP (amplitude) for filtering
-        self.df_csv2_name: str = 'Amplitude'
-        self.selected_sensor: str = 'Sensor3'
-        self.selected_sensor_list: list = []
-        self.selected_sensor_dict: dict = {
-            'master': None,
-            'slave0': None,
-            'slave1': None,
-            'slave2': None,
-            'slave3': None,
-            'slave4': None,
-            'slave5': None,
-            'slave6': None
-        }
-        self.average_sensor_data: dict = dict()  # empty!
-        self.average_data: list = []
-        self.for_histo: list = []
-        self.widget_counter: int = self._params.current_labels
-        self._chk_slave_list: list = []
-        self.sensor_data_list: list = []
-
     def open_csv(self) -> None:
 
         file_name, _ = QFileDialog.getOpenFileName(self,
@@ -411,16 +407,19 @@ class CSVGraphApp(QMainWindow):
             name_csv_thickness = os.path.join(data_path, name)
             name_csv_amplitude = name_csv_thickness + ' - AMP'
 
-        t1 = Thread(target=self.process_csv1_thickness, name='csv2', args=(name_csv_thickness, _delimiter))
+        t1 = Thread(target=self.process_csv1_thickness, name='csv1', args=(name_csv_thickness, _delimiter))
         t2 = Thread(target=self.process_csv2_amplitude, name='csv2', args=(name_csv_amplitude, _delimiter))
         t1.start()
         t2.start()
         t1.join()
         t2.join()
 
-        self.populate_checkbox(self.column_checkbox)
-        self.action_add_box.setDisabled(False)
-        self.action_del_box.setDisabled(False)
+        self.enable_all_combo_boxes()
+
+        # self.populate_checkbox(self.column_checkbox)
+        # self.populate_sensor_combo_boxes()  # WIP
+        # self.action_add_box.setDisabled(False)
+        # self.action_del_box.setDisabled(False)
 
     def process_csv1_thickness(self, name_csv_thickness: str, _delimiter: str) -> None:
         self.df_csv1_name = QFileInfo(name_csv_thickness + '.csv').baseName()  # fileName() to have it with the extension
@@ -460,54 +459,65 @@ class CSVGraphApp(QMainWindow):
 
         self.statusBar().showMessage(f"Loaded rows from {_csv}")
 
-    def populate_checkbox(self, box) -> None:
-        """ function to populate the combo boxes with the available sensors to plot """
-        if self.df_csv1 is not None and self.df_csv2 is not None:
-            checkbox_items = []
-            for row_idx, column in enumerate(self.df_csv1.columns):
-                if column != 'Elevation':
-                    checkbox_items.append(column)
-            box.addItems(checkbox_items)
-
-    def selection_master_combobox(self) -> None:
-        """ handles the selection in the master combo box """
-
-        if len(self.selected_sensor_list) == 1:  # it means only the master combo box is available
-            self.selected_sensor_dict: dict = {  # we reset the dictionary of selected sensors
-                'master': None,
-                'slave0': None,
-                'slave1': None,
-                'slave2': None,
-                'slave3': None,
-                'slave4': None,
-                'slave5': None,
-                'slave6': None
-            }
-
-        self.selected_sensor = self.column_checkbox.currentText()
-        self.selected_sensor_dict['master'] = self.column_checkbox.currentText()
-
-        self.update_selected_sensors_list()
-
-        # No longer automatic plot, every plot is now trigger with the plot button
+    def populate_sensor_combo_boxes(self):
+        # standard_sensors: list[str] = []
         # if self.df_csv1 is not None and self.df_csv2 is not None:
-        #     self.plot_data()
+        #     for row_idx, column in enumerate(self.df_csv1.columns):
+        #         if column != 'Elevation':
+        #             standard_sensors.append(column)
 
-    def new_sensor_to_keep(self, e: int) -> None:
-        _sender = self.sender()
-        _index: int = self._chk_slave_list.index(_sender)
-        _slave: str = f'slave{_index}'
+        for i in range(1, 9):  # Loop from 1 to 8
+            sensor_name = f"Sensor{i}"
+            combo_box = QComboBox()
+            combo_box.addItems(['Disable', f"{sensor_name}"])
+            combo_box.setCurrentIndex(0)  # all disable by default
+            combo_box.currentIndexChanged.connect(self.sensor_call)
+            combo_box.setObjectName(sensor_name)  # set the object name to identify the sensor
+            combo_box.setEnabled(False)
 
-        _sensor = f'Sensor{e+1}'
-        self.selected_sensor_dict[_slave] = _sensor
-        self.update_selected_sensors_list()
+            self.left_panel.addWidget(combo_box, self.widget_counter, 0, 1, 3)
+            # self.main_widget.update()
+            self.widget_counter += 1
 
-    def update_selected_sensors_list(self) -> None:
-        _temp_dict = dict(filter(lambda item: item[1] is not None, self.selected_sensor_dict.items()))
-        self.selected_sensor_list = list(_temp_dict.values())
+    def sensor_call(self, index):
+        sender = self.sender()  # Get the combo box that triggered the event
+        sensor_name = sender.objectName()  # Get the name of the sensor (Sensor1, Sensor2, etc.)
+
+        if index == 0:
+            print(f"{sensor_name} Disable")
+        else:
+            print(f"{sensor_name} Enable")
+
+    def get_enabled_sensors(self) -> list[str]:
+        enabled_sensors = []
+
+        # Iterate through the widgets in the layout
+        for i in range(self.left_panel.count()):  # Exclude the last two button widgets
+            widget = self.left_panel.itemAt(i).widget()
+            if isinstance(widget, QComboBox):
+                if widget.isEnabled() and widget.currentText() != 'Disable':
+                    enabled_sensors.append(widget.currentText())
+
+        if not enabled_sensors:
+            self.error_box('Attention!.\nNo sensors are enable to plot.')
+            return []
+
+        return enabled_sensors
+
+    def enable_all_combo_boxes(self):
+        # Iterate through the widgets in the layout
+        for i in range(self.left_panel.count()):  # Exclude the last two button widgets
+            widget = self.left_panel.itemAt(i).widget()
+            if isinstance(widget, QComboBox):
+                widget.setEnabled(True)  # Enable the combo box
+                widget.setCurrentIndex(1)  # Set to the corresponding sensor
+
+        print('all combo sensors enable')
 
     def plot_data(self) -> None:
         """ plot data """
+
+        self.selected_sensor_list = self.get_enabled_sensors()
 
         self.overlay.show()
 
@@ -524,8 +534,7 @@ class CSVGraphApp(QMainWindow):
         x_histo = []
         y_histo = []
         sensor_data_list = []
-        print(f'Plot Begin: {len(sensor_data_list)}')
-        print(f'Selected sensors: {len(self.selected_sensor_list)}')
+
         for _sensor in self.selected_sensor_list:
             columns_to_keep = ['Elevation', _sensor]
             df_thickness = self.df_csv1.copy()
@@ -560,10 +569,8 @@ class CSVGraphApp(QMainWindow):
             self.for_histo = [x_histo, y_histo]  # for histogram
 
         self.plot_averages()
-        self.plot_defaults()
+        self.get_plot_defaults()
         self.overlay.emitter.trigger_signal()
-        self.sensor_data_list = sensor_data_list.copy()
-        print(f'Plot End: {len(self.sensor_data_list)}')
 
     def plot_averages(self) -> None:
         """ plot the averages of data according the quantity of selected sensors
@@ -641,7 +648,7 @@ class CSVGraphApp(QMainWindow):
         self.result_trim_20.setText(str(round(trimmed_mean_20, 8)))
         self.result_points.setText(str(_df.loc[:, 'x'].count()))
 
-    def plot_defaults(self) -> None:
+    def get_plot_defaults(self) -> None:
         """ defaults for plotting """
         self.average_sensor_data: dict = dict()
         self.plot_widget.plotItem.vb.setLimits(xMin=int(self.x_min.text()),
@@ -663,59 +670,18 @@ class CSVGraphApp(QMainWindow):
         self.plot_widget.removeItem(self.hover_label)
         self.plot_widget.clear()
         self.histo.close_histo()
-        self.column_checkbox.clear()
         self.histo.instances = []
-        self.action_add_box.setDisabled(True)
-        self.action_del_box.setDisabled(True)
-        for w in self._chk_slave_list:
-            self.left_panel.removeWidget(w)
-        self.widget_counter = self._params.current_labels
-        self._chk_slave_list = []
-        self.sensor_data_list = []
         self.selected_sensor_list = []
         self.main_widget.update()
 
     def export_statistics(self):
-        if not self.sensor_data_list:
-            print(f'Export Begin: {len(self.sensor_data_list)}')
+        if not self.selected_sensor_list:
             self.error_box('No data to export.\n\n'
                            'Please, first load data to process, plot and then export.\n\n'
                            'Pay attention you might need to load 2 csv before attempting to plot.')
             return
 
-        print(f'Export Begin: {len(self.sensor_data_list)}')
-        for sensor_data in self.sensor_data_list:
-            # print(f"Sensor: {sensor_data.sensor_name}, X Data: {sensor_data.x_data}, Y Data: {sensor_data.y_data}")
-            print(f'Export Sensor: {sensor_data.sensor_name}')
-
-    def add_qcombobox(self) -> None:
-
-        if self.widget_counter <= self._params.current_widgets:
-            _chk_slave = QComboBox()
-            _chk_slave.currentIndexChanged.connect(self.new_sensor_to_keep)
-            self.left_panel.addWidget(_chk_slave, self.widget_counter, 0, 1, 3)
-
-            self.main_widget.update()
-            self.widget_counter += 1
-
-            self._chk_slave_list.append(_chk_slave)
-            self.populate_checkbox(_chk_slave)
-        else:
-            self.error_box('The maximum number of slave plots are 7')
-
-    def remove_qcombobox(self):
-        n = len(self._chk_slave_list)  # last
-
-        if n > 0:
-            w = self._chk_slave_list[n-1]  # last widget
-            self.left_panel.removeWidget(w)  # remove from UI widgets
-            self._chk_slave_list.remove(w)  # remove from list of widgets
-            self.widget_counter -= 1  # update counter positions
-            self.selected_sensor_list.pop()  # remove from list to plot
-        else:
-            self.error_box('No slave plots to delete')
-
-        self.main_widget.update()
+        print(f'Export Begin: {len(self.selected_sensor_list)}')
 
     def error_box(self, message) -> None:
         dlg = QMessageBox(self)
