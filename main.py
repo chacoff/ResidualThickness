@@ -1,7 +1,8 @@
 import sys
 import csv
 from PyQt6.QtWidgets import QApplication, QMainWindow, QFileDialog, QPushButton, QVBoxLayout, QHBoxLayout, QWidget, \
-    QMessageBox, QLabel, QGridLayout, QTableWidget, QHeaderView, QTableWidgetItem, QLineEdit, QComboBox, QSizePolicy
+    QMessageBox, QLabel, QGridLayout, QTableWidget, QHeaderView, QTableWidgetItem, QLineEdit, QComboBox, QSizePolicy, \
+    QColorDialog
 from PyQt6.QtCore import Qt, QSize, QFileInfo, QPointF, pyqtSignal, pyqtSlot
 from PyQt6.QtGui import QAction, QColor, QIcon, QPixmap, QFont, QIntValidator, QCursor
 import pyqtgraph as pg
@@ -33,11 +34,13 @@ class CSVGraphApp(QMainWindow):
         self.df_csv2: pd = None  # csv AMP (amplitude) for filtering
         self.df_csv2_name: str = 'Amplitude'
         self.selected_sensor_list: list = []
+        self.selected_sensor_colors: dict = {}
         self.average_sensor_data: dict = dict()  # empty!
         self.average_data: list = []
         self.for_histo: list = []
         self.widget_counter: int = self._params.current_labels
         self.widget_init: int = self._params.current_widgets
+        self.color_pickers = []
 
         # UI Title
         font = QFont()
@@ -463,6 +466,7 @@ class CSVGraphApp(QMainWindow):
         """ add the combo boxes with the sensors with the option to enable and disable each sensor"""
         for i in range(1, 9):  # Loop from 1 to 8
             sensor_name = f"Sensor{i}"
+
             combo_box = QComboBox()
             combo_box.addItems(['Disable', f"{sensor_name}"])
             combo_box.setCurrentIndex(0)  # all disable by default
@@ -470,9 +474,25 @@ class CSVGraphApp(QMainWindow):
             combo_box.setObjectName(sensor_name)  # set the object name to identify the sensor
             combo_box.setEnabled(False)
 
-            self.left_panel.addWidget(combo_box, self.widget_counter, 0, 1, 3)
-            # self.main_widget.update()
+            color_picker = QLabel()  # Label to show the color
+            color_picker.setFixedSize(20, 20)  # Set a fixed size for the color box
+            color_picker.setStyleSheet('background-color: gray;')  # Default color
+
+            self.color_pickers.append((combo_box, color_picker))
+            color_picker.mousePressEvent = lambda event, cb=combo_box, cp=color_picker: self.open_color_dialog(cb, cp)
+
+            self.left_panel.addWidget(combo_box, self.widget_counter, 0, 1, 2)  # spans 2 columns
+            self.left_panel.addWidget(color_picker, self.widget_counter, 2)  # takes 1 column
+
             self.widget_counter += 1
+
+    def open_color_dialog(self, combo_box, color_picker):
+        color = QColorDialog.getColor()  # Open the color dialog
+        if color.isValid():
+            color_name = color.name()  # Get the color name
+            color_picker.setStyleSheet(f'background-color: {color_name};')  # Set the color to the picker
+            sensor_name = combo_box.objectName()
+            self.selected_sensor_colors[sensor_name] = color_name
 
     def combo_box_sensor_call(self, index):
         """ debug method for all combo boxes"""
@@ -566,6 +586,7 @@ class CSVGraphApp(QMainWindow):
             x_1 = filtered_thickness[_sensor]  # before: self.selected_sensor
             y = df_thickness.Elevation
             color = self.methods.give_me_a_color(_sensor)
+            print(self.selected_sensor_colors)
 
             sensor_data = SensorData(sensor_name=_sensor, x_data=x_1, y_data=y)
             sensor_data_list.append(sensor_data)
