@@ -188,13 +188,13 @@ class CSVGraphApp(QMainWindow):
         # self.column_checkbox = QComboBox()
         # self.column_checkbox.currentIndexChanged.connect(self.selection_master_combobox)
         self.action_enable_default_box = QPushButton('default')
-        # self.action_enable_default_box.clicked.connect(self.enable_default_box)
+        self.action_enable_default_box.clicked.connect(self.enable_default_combo_boxes)
         self.action_enable_default_box.setDisabled(True)
         self.action_enable_all_box = QPushButton('enable all')
-        # self.action_enable_all_box.clicked.connect(self.enable_all_box)
+        self.action_enable_all_box.clicked.connect(self.enable_all_combo_boxes)
         self.action_enable_all_box.setDisabled(True)
         self.action_disable_all_box = QPushButton('disable all')
-        # self.action_disable_all_box.clicked.connect(self.disable_all_box)
+        self.action_disable_all_box.clicked.connect(self.disable_all_combo_boxes)
         self.action_disable_all_box.setDisabled(True)
 
         self.left_panel.setAlignment(Qt.AlignmentFlag.AlignTop)
@@ -414,12 +414,10 @@ class CSVGraphApp(QMainWindow):
         t1.join()
         t2.join()
 
-        self.enable_all_combo_boxes()
-
-        # self.populate_checkbox(self.column_checkbox)
-        # self.populate_sensor_combo_boxes()  # WIP
-        # self.action_add_box.setDisabled(False)
-        # self.action_del_box.setDisabled(False)
+        self.enable_default_combo_boxes()
+        self.action_enable_default_box.setDisabled(False)
+        self.action_enable_all_box.setDisabled(False)
+        self.action_disable_all_box.setDisabled(False)
 
     def process_csv1_thickness(self, name_csv_thickness: str, _delimiter: str) -> None:
         self.df_csv1_name = QFileInfo(name_csv_thickness + '.csv').baseName()  # fileName() to have it with the extension
@@ -460,18 +458,13 @@ class CSVGraphApp(QMainWindow):
         self.statusBar().showMessage(f"Loaded rows from {_csv}")
 
     def populate_sensor_combo_boxes(self):
-        # standard_sensors: list[str] = []
-        # if self.df_csv1 is not None and self.df_csv2 is not None:
-        #     for row_idx, column in enumerate(self.df_csv1.columns):
-        #         if column != 'Elevation':
-        #             standard_sensors.append(column)
-
+        """ add the combo boxes with the sensors with the option to enable and disable each sensor"""
         for i in range(1, 9):  # Loop from 1 to 8
             sensor_name = f"Sensor{i}"
             combo_box = QComboBox()
             combo_box.addItems(['Disable', f"{sensor_name}"])
             combo_box.setCurrentIndex(0)  # all disable by default
-            combo_box.currentIndexChanged.connect(self.sensor_call)
+            combo_box.currentIndexChanged.connect(self.combo_box_sensor_call)
             combo_box.setObjectName(sensor_name)  # set the object name to identify the sensor
             combo_box.setEnabled(False)
 
@@ -479,7 +472,8 @@ class CSVGraphApp(QMainWindow):
             # self.main_widget.update()
             self.widget_counter += 1
 
-    def sensor_call(self, index):
+    def combo_box_sensor_call(self, index):
+        """ debug method for all combo boxes"""
         sender = self.sender()  # Get the combo box that triggered the event
         sensor_name = sender.objectName()  # Get the name of the sensor (Sensor1, Sensor2, etc.)
 
@@ -489,30 +483,44 @@ class CSVGraphApp(QMainWindow):
             print(f"{sensor_name} Enable")
 
     def get_enabled_sensors(self) -> list[str]:
+        """ get which sensors are enable to either plot or export the data """
         enabled_sensors = []
 
-        # Iterate through the widgets in the layout
-        for i in range(self.left_panel.count()):  # Exclude the last two button widgets
+        for i in range(self.left_panel.count()):
             widget = self.left_panel.itemAt(i).widget()
             if isinstance(widget, QComboBox):
                 if widget.isEnabled() and widget.currentText() != 'Disable':
                     enabled_sensors.append(widget.currentText())
 
         if not enabled_sensors:
-            self.error_box('Attention!.\nNo sensors are enable to plot.')
+            self.error_box('Attention!.\nNo sensors are enable to plot nor export data.')
             return []
 
         return enabled_sensors
 
-    def enable_all_combo_boxes(self):
-        # Iterate through the widgets in the layout
-        for i in range(self.left_panel.count()):  # Exclude the last two button widgets
+    def enable_default_combo_boxes(self) -> None:
+        for i in range(self.left_panel.count()):
             widget = self.left_panel.itemAt(i).widget()
             if isinstance(widget, QComboBox):
-                widget.setEnabled(True)  # Enable the combo box
+                widget.setEnabled(True)  # Enable the combo box in case is disable
+                if widget.currentText() in ['Sensor1', 'Sensor2', 'Sensor7', 'Sensor8']:
+                    print('jereeee')
+                    widget.setCurrentIndex(0)  # Set to disable
+                else:
+                    widget.setCurrentIndex(1)  # Set to the corresponding sensor
+
+    def enable_all_combo_boxes(self) -> None:
+        for i in range(self.left_panel.count()):
+            widget = self.left_panel.itemAt(i).widget()
+            if isinstance(widget, QComboBox):
+                widget.setEnabled(True)  # Enable the combo box in case is disable
                 widget.setCurrentIndex(1)  # Set to the corresponding sensor
 
-        print('all combo sensors enable')
+    def disable_all_combo_boxes(self) -> None:
+        for i in range(self.left_panel.count()):
+            widget = self.left_panel.itemAt(i).widget()
+            if isinstance(widget, QComboBox):
+                widget.setCurrentIndex(0)  # Set to the Disable
 
     def plot_data(self) -> None:
         """ plot data """
@@ -681,7 +689,7 @@ class CSVGraphApp(QMainWindow):
                            'Pay attention you might need to load 2 csv before attempting to plot.')
             return
 
-        print(f'Export Begin: {len(self.selected_sensor_list)}')
+        print(f'Export Begin: {len(self.selected_sensor_list)} - {self.selected_sensor_list}')
 
     def error_box(self, message) -> None:
         dlg = QMessageBox(self)
