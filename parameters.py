@@ -1,4 +1,7 @@
 class UIParameters:
+    # Debug flag
+    debug: bool = False                     # Debug flag
+
     # Titles & Widgets
     title_version: str = 'RDEsch v0.3b'     # title and version of the software
     current_labels: int = 22                # current labels, i.e. widgets to start adding sub-plots

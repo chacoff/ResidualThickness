@@ -476,13 +476,13 @@ class CSVGraphApp(QMainWindow):
 
     def combo_box_sensor_call(self, index):
         """ debug method for all combo boxes"""
+
         sender = self.sender()  # Get the combo box that triggered the event
         sensor_name = sender.objectName()  # Get the name of the sensor (Sensor1, Sensor2, etc.)
 
-        if index == 0:
-            print(f"{sensor_name} Disable")
-        else:
-            print(f"{sensor_name} Enable")
+        if self._params.debug:
+            _text: str = f'{sensor_name} Disable' if index == 0 else f'{sensor_name} Enable'
+            print(_text)
 
     def get_enabled_sensors(self) -> list[str]:
         """ get which sensors are enable to either plot or export the data """
@@ -532,7 +532,6 @@ class CSVGraphApp(QMainWindow):
         """ plot data """
 
         self.clear_plot()
-        self.selected_sensor_list = self.get_enabled_sensors()
 
         self.overlay.show()
 
@@ -546,6 +545,7 @@ class CSVGraphApp(QMainWindow):
         self.plot_widget.clear()
         self.header_title.setText(f'Residual Thickness: {self.df_csv1_name}')
 
+        self.selected_sensor_list = self.get_enabled_sensors()
         x_histo = []
         y_histo = []
         sensor_data_list = []
