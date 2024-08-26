@@ -1,7 +1,8 @@
 import sys
 import csv
 from PyQt6.QtWidgets import QApplication, QMainWindow, QFileDialog, QPushButton, QVBoxLayout, QHBoxLayout, QWidget, \
-    QMessageBox, QLabel, QGridLayout, QTableWidget, QHeaderView, QTableWidgetItem, QLineEdit, QComboBox, QSizePolicy
+    QMessageBox, QLabel, QGridLayout, QTableWidget, QHeaderView, QTableWidgetItem, QLineEdit, QComboBox, QSizePolicy, \
+    QColorDialog
 from PyQt6.QtCore import Qt, QSize, QFileInfo, QPointF, pyqtSignal, pyqtSlot
 from PyQt6.QtGui import QAction, QColor, QIcon, QPixmap, QFont, QIntValidator, QCursor
 import pyqtgraph as pg
@@ -14,17 +15,40 @@ from methods import Methods
 from progressSpinner import Overlay
 from parameters import UIParameters
 from histogramWidget import HistogramApp
-from dataPlot import SensorData
+from dataPlot import DataIntervals
 from threading import Thread
+import warnings
+warnings.filterwarnings("ignore")
 
 
 class CSVGraphApp(QMainWindow):
     def __init__(self, ):
         super().__init__()
 
+        # Classes ------------
+        self._params = UIParameters()
+        self.methods = Methods()
+        self.histo = HistogramApp()
+
+        # Variables ----------
+        self.df_csv1: pd = None  # csv thickness to plot
+        self.df_csv1_name: str = 'Thickness'
+        self.df_csv2: pd = None  # csv AMP (amplitude) for filtering
+        self.df_csv2_name: str = 'Amplitude'
+        self.selected_sensor_list: list = []
+        self.selected_sensor_colors: dict = {}
+        self.average_sensor_data: dict = dict()  # empty!
+        self.average_data: list = []
+        self.for_histo: list = []
+        self.widget_counter: int = self._params.current_labels
+        self.widget_init: int = self._params.current_widgets
+        self.color_pickers = []
+
+        #region UI-region
+
+        # UI Title
         font = QFont()
         font.setPixelSize(16)
-        self._params = UIParameters()
         self.setWindowTitle(f' ResidualThickness - {self._params.title_version}')
 
         # GUI ----------
@@ -168,14 +192,17 @@ class CSVGraphApp(QMainWindow):
 
         label_checkbox = QLabel('Sensor to plot:')
         label_checkbox.setStyleSheet('''QLabel {font-size: 14px; font-weight: bold; color: #606060;}''')
-        self.column_checkbox = QComboBox()
-        self.column_checkbox.currentIndexChanged.connect(self.selection_master_combobox)
-        self.action_add_box = QPushButton('add sensor')
-        self.action_add_box.clicked.connect(self.add_qcombobox)
-        self.action_add_box.setDisabled(True)
-        self.action_del_box = QPushButton('remove sensor')
-        self.action_del_box.clicked.connect(self.remove_qcombobox)
-        self.action_del_box.setDisabled(True)
+        # self.column_checkbox = QComboBox()
+        # self.column_checkbox.currentIndexChanged.connect(self.selection_master_combobox)
+        self.action_enable_default_box = QPushButton('default')
+        self.action_enable_default_box.clicked.connect(self.enable_default_combo_boxes)
+        self.action_enable_default_box.setDisabled(True)
+        self.action_enable_all_box = QPushButton('enable all')
+        self.action_enable_all_box.clicked.connect(self.enable_all_combo_boxes)
+        self.action_enable_all_box.setDisabled(True)
+        self.action_disable_all_box = QPushButton('disable all')
+        self.action_disable_all_box.clicked.connect(self.disable_all_combo_boxes)
+        self.action_disable_all_box.setDisabled(True)
 
         self.left_panel.setAlignment(Qt.AlignmentFlag.AlignTop)
         self.left_panel.setContentsMargins(0, 8, 0, 0)
@@ -243,14 +270,16 @@ class CSVGraphApp(QMainWindow):
         # left panel: adding sensors
         self.left_panel.addWidget(label_checkbox, 20, 0, 1, 3)
         ad = QHBoxLayout()
-        ad.addWidget(self.action_add_box)
-        ad.addWidget(self.action_del_box)
+        ad.addWidget(self.action_enable_default_box)
+        ad.addWidget(self.action_enable_all_box)
+        ad.addWidget(self.action_disable_all_box)
         ad.setContentsMargins(0, 0, 0, 0)
         ad_ = QWidget()
         ad_.setLayout(ad)
         self.left_panel.addWidget(ad_, 21, 0, 1, 3)
-        self.left_panel.addWidget(self.column_checkbox, 22, 0, 1, 3)
+        # self.left_panel.addWidget(self.column_checkbox, 22, 0, 1, 3)
         # self.left_panel.setRowStretch(5, 1)
+        self.populate_sensor_combo_boxes()
 
         w_left_panel = QWidget()
         w_left_panel.setLayout(self.left_panel)
@@ -270,11 +299,14 @@ class CSVGraphApp(QMainWindow):
         self.plot_export.triggered.connect(self.export_statistics)
         self.plot_clear = QAction('Clear Plot', self)
         self.plot_clear.triggered.connect(self.clear_plot)
+        self.data_clear = QAction('Clear Data', self)
+        self.data_clear.triggered.connect(self.clear_all_data)
 
         toolbar.addAction(self.load_csv1)
         toolbar.addAction(self.plot_button)
         toolbar.addAction(self.plot_export)
         toolbar.addAction(self.plot_clear)
+        toolbar.addAction(self.data_clear)
         toolbar.setMovable(False)
         toolbar.setIconSize(QSize(32, 32))
         toolbar.setStyleSheet('''
@@ -284,7 +316,6 @@ class CSVGraphApp(QMainWindow):
                         margin-top: 6px;
                         padding-top: 4px;
                         background: transparent; 
-                        border: none; 
                         height: 64px;
                     }
 
@@ -353,31 +384,7 @@ class CSVGraphApp(QMainWindow):
         self.overlay = Overlay(self.centralWidget())
         self.overlay.hide()
 
-        # Variables ----------
-        self.methods = Methods()
-        self.histo = HistogramApp()
-        self.df_csv1: pd = None  # csv thickness to plot
-        self.df_csv1_name: str = 'Thickness'
-        self.df_csv2: pd = None  # csv AMP (amplitude) for filtering
-        self.df_csv2_name: str = 'Amplitude'
-        self.selected_sensor: str = 'Sensor3'
-        self.selected_sensor_list: list = []
-        self.selected_sensor_dict: dict = {
-            'master': None,
-            'slave0': None,
-            'slave1': None,
-            'slave2': None,
-            'slave3': None,
-            'slave4': None,
-            'slave5': None,
-            'slave6': None
-        }
-        self.average_sensor_data: dict = dict()  # empty!
-        self.average_data: list = []
-        self.for_histo: list = []
-        self.widget_counter: int = self._params.current_labels
-        self._chk_slave_list: list = []
-        self.sensor_data_list: list = []
+        #endregion
 
     def open_csv(self) -> None:
 
@@ -411,16 +418,17 @@ class CSVGraphApp(QMainWindow):
             name_csv_thickness = os.path.join(data_path, name)
             name_csv_amplitude = name_csv_thickness + ' - AMP'
 
-        t1 = Thread(target=self.process_csv1_thickness, name='csv2', args=(name_csv_thickness, _delimiter))
+        t1 = Thread(target=self.process_csv1_thickness, name='csv1', args=(name_csv_thickness, _delimiter))
         t2 = Thread(target=self.process_csv2_amplitude, name='csv2', args=(name_csv_amplitude, _delimiter))
         t1.start()
         t2.start()
         t1.join()
         t2.join()
 
-        self.populate_checkbox(self.column_checkbox)
-        self.action_add_box.setDisabled(False)
-        self.action_del_box.setDisabled(False)
+        self.enable_default_combo_boxes()
+        self.action_enable_default_box.setDisabled(False)
+        self.action_enable_all_box.setDisabled(False)
+        self.action_disable_all_box.setDisabled(False)
 
     def process_csv1_thickness(self, name_csv_thickness: str, _delimiter: str) -> None:
         self.df_csv1_name = QFileInfo(name_csv_thickness + '.csv').baseName()  # fileName() to have it with the extension
@@ -460,54 +468,133 @@ class CSVGraphApp(QMainWindow):
 
         self.statusBar().showMessage(f"Loaded rows from {_csv}")
 
-    def populate_checkbox(self, box) -> None:
-        """ function to populate the combo boxes with the available sensors to plot """
-        if self.df_csv1 is not None and self.df_csv2 is not None:
-            checkbox_items = []
-            for row_idx, column in enumerate(self.df_csv1.columns):
-                if column != 'Elevation':
-                    checkbox_items.append(column)
-            box.addItems(checkbox_items)
+    def populate_sensor_combo_boxes(self):
+        """ add the combo boxes with the sensors with the option to enable and disable each sensor"""
+        for i in range(1, 9):  # Loop from 1 to 8
+            sensor_name = f"Sensor{i}"
 
-    def selection_master_combobox(self) -> None:
-        """ handles the selection in the master combo box """
+            combo_box = QComboBox()
+            combo_box.addItems(['Disable', f"{sensor_name}"])
+            combo_box.setCurrentIndex(0)  # all disable by default
+            combo_box.currentIndexChanged.connect(self.combo_box_sensor_call)
+            combo_box.setObjectName(sensor_name)  # set the object name to identify the sensor
+            combo_box.setEnabled(False)
 
-        if len(self.selected_sensor_list) == 1:  # it means only the master combo box is available
-            self.selected_sensor_dict: dict = {  # we reset the dictionary of selected sensors
-                'master': None,
-                'slave0': None,
-                'slave1': None,
-                'slave2': None,
-                'slave3': None,
-                'slave4': None,
-                'slave5': None,
-                'slave6': None
-            }
+            color_picker = QLabel()  # Label to show the color
+            color_picker.setFixedSize(20, 20)  # Set a fixed size for the color box
+            color_picker.setStyleSheet('background-color: gray;')
 
-        self.selected_sensor = self.column_checkbox.currentText()
-        self.selected_sensor_dict['master'] = self.column_checkbox.currentText()
+            self.color_pickers.append((combo_box, color_picker))
+            color_picker.mousePressEvent = lambda event, cb=combo_box, cp=color_picker: self.open_color_dialog(cb, cp)
 
-        self.update_selected_sensors_list()
+            self.left_panel.addWidget(combo_box, self.widget_counter, 0, 1, 2)  # spans 2 columns
+            self.left_panel.addWidget(color_picker, self.widget_counter, 2)  # takes 1 column
 
-        # No longer automatic plot, every plot is now trigger with the plot button
-        # if self.df_csv1 is not None and self.df_csv2 is not None:
-        #     self.plot_data()
+            self.widget_counter += 1
 
-    def new_sensor_to_keep(self, e: int) -> None:
-        _sender = self.sender()
-        _index: int = self._chk_slave_list.index(_sender)
-        _slave: str = f'slave{_index}'
+    def open_color_dialog(self, combo_box, color_picker):
+        color = QColorDialog.getColor()  # Open the color dialog
+        if color.isValid():
+            rgb_values = [color.red(), color.green(), color.blue()]
+            color_name = color.name()  # Get the color name
+            color_picker.setStyleSheet(f'background-color: {color_name};')  # Set the color to the picker
+            sensor_name = combo_box.objectName()
+            self.selected_sensor_colors[sensor_name] = rgb_values
 
-        _sensor = f'Sensor{e+1}'
-        self.selected_sensor_dict[_slave] = _sensor
-        self.update_selected_sensors_list()
+    def combo_box_sensor_call(self, index):
+        """ debug method for all combo boxes"""
+        # TODO keep the color somewhere to not lose the custom choice between different sessions
 
-    def update_selected_sensors_list(self) -> None:
-        _temp_dict = dict(filter(lambda item: item[1] is not None, self.selected_sensor_dict.items()))
-        self.selected_sensor_list = list(_temp_dict.values())
+        sender = self.sender()  # Get the combo box that triggered the event
+        sensor_name = sender.objectName()  # Get the name of the sensor (Sensor1, Sensor2, etc.)
+        sensor_index = int(list(sensor_name)[-1]) - 1
+
+        if index == 0:
+            self.set_picker_color(sensor_name, self.color_pickers[sensor_index][1], index)
+
+        if index == 1:
+            self.set_picker_color(sensor_name, self.color_pickers[sensor_index][1], index)
+
+        if self._params.debug:
+            _text: str = f'{sensor_name} Disable' if index == 0 else f'{sensor_name} Enable'
+            print(_text)
+
+    def get_enabled_sensors(self) -> list[str]:
+        """ get which sensors are enable to either plot or export the data """
+        enabled_sensors = []
+
+        for i in range(self.left_panel.count()):
+            widget = self.left_panel.itemAt(i).widget()
+            if isinstance(widget, QComboBox):
+                if widget.isEnabled() and widget.currentText() != 'Disable':
+                    enabled_sensors.append(widget.currentText())
+
+        if not enabled_sensors:
+            self.error_box('Attention!.\nNo sensors are enable to plot nor export data.')
+            return []
+
+        return enabled_sensors
+
+    def enable_default_combo_boxes(self) -> None:
+
+        j = 1  # the counter for the sensors, it should go from 1 to 8
+        for i in range(self.left_panel.count()):
+            widget = self.left_panel.itemAt(i).widget()
+            if isinstance(widget, QComboBox):
+                widget.setEnabled(True)
+                index: int = 0 if widget.objectName() in ['Sensor1', 'Sensor2', 'Sensor7', 'Sensor8'] else 1
+                widget.setCurrentIndex(index)
+
+                sensor: str = self.color_pickers[j-1][0].objectName()
+                picker: QLabel = self.color_pickers[j-1][1]
+                self.set_picker_color(sensor, picker, index)
+                j += 1
+
+    def set_picker_color(self, sensor: str, picker: QLabel, status: int) -> None:
+        rgb_values: list[int, int, int] = self.methods.give_me_a_color(sensor) if status == 1 else [127, 127, 127]
+        self.selected_sensor_colors[sensor] = rgb_values
+        rgb_string = f'rgb({rgb_values[0]}, {rgb_values[1]}, {rgb_values[2]})'
+        picker.setStyleSheet(f'background-color: {rgb_string};')  # Default color
+
+    def enable_all_combo_boxes(self) -> None:
+        j = 1
+        for i in range(self.left_panel.count()):
+            widget = self.left_panel.itemAt(i).widget()
+            if isinstance(widget, QComboBox):
+                widget.setEnabled(True)  # Enable the combo box in case is disable
+                widget.setCurrentIndex(1)  # Set to the corresponding sensor
+                sensor: str = self.color_pickers[j - 1][0].objectName()
+                picker: QLabel = self.color_pickers[j - 1][1]
+                self.set_picker_color(sensor, picker, 1)
+                j += 1
+
+    def disable_all_combo_boxes(self) -> None:
+        j = 1
+        for i in range(self.left_panel.count()):
+            widget = self.left_panel.itemAt(i).widget()
+            if isinstance(widget, QComboBox):
+                widget.setCurrentIndex(0)  # Set to the Disable
+                sensor: str = self.color_pickers[j - 1][0].objectName()
+                picker: QLabel = self.color_pickers[j - 1][1]
+                self.set_picker_color(sensor, picker, 0)
+                j += 1
+
+    def ui_disable_all_combo_boxes(self) -> None:
+        j = 1
+        for i in range(self.left_panel.count()):
+            widget = self.left_panel.itemAt(i).widget()
+            if isinstance(widget, QComboBox):
+                widget.setCurrentIndex(0)  # Set to the Disable
+                widget.setEnabled(False)  # UI disable the widget
+                sensor: str = self.color_pickers[j - 1][0].objectName()
+                picker: QLabel = self.color_pickers[j - 1][1]
+                self.set_picker_color(sensor, picker, 0)
+                j += 1
 
     def plot_data(self) -> None:
         """ plot data """
+
+        self.clear_plot()
 
         self.overlay.show()
 
@@ -521,11 +608,10 @@ class CSVGraphApp(QMainWindow):
         self.plot_widget.clear()
         self.header_title.setText(f'Residual Thickness: {self.df_csv1_name}')
 
+        self.selected_sensor_list = self.get_enabled_sensors()
         x_histo = []
         y_histo = []
-        sensor_data_list = []
-        print(f'Plot Begin: {len(sensor_data_list)}')
-        print(f'Selected sensors: {len(self.selected_sensor_list)}')
+
         for _sensor in self.selected_sensor_list:
             columns_to_keep = ['Elevation', _sensor]
             df_thickness = self.df_csv1.copy()
@@ -541,10 +627,7 @@ class CSVGraphApp(QMainWindow):
 
             x_1 = filtered_thickness[_sensor]  # before: self.selected_sensor
             y = df_thickness.Elevation
-            color = self.methods.give_me_a_color(_sensor)
-
-            sensor_data = SensorData(sensor_name=_sensor, x_data=x_1, y_data=y)
-            sensor_data_list.append(sensor_data)
+            color = self.selected_sensor_colors[_sensor]
 
             scatter_plot = pg.ScatterPlotItem(size=2, pen=pg.mkPen(None), brush=pg.mkBrush(color + [64]))
             scatter_plot.setData(x=x_1, y=y)
@@ -557,13 +640,11 @@ class CSVGraphApp(QMainWindow):
                                                                                   min_elevation=self._params.data_min_elevation)
             x_histo = x_histo + x_1.values.tolist()
             y_histo = y_histo + y.values.tolist()
-            self.for_histo = [x_histo, y_histo]  # for histogram
+            self.for_histo = [x_histo, y_histo]  # for histogram & data export
 
         self.plot_averages()
-        self.plot_defaults()
+        self.get_plot_defaults()
         self.overlay.emitter.trigger_signal()
-        self.sensor_data_list = sensor_data_list.copy()
-        print(f'Plot End: {len(self.sensor_data_list)}')
 
     def plot_averages(self) -> None:
         """ plot the averages of data according the quantity of selected sensors
@@ -616,32 +697,41 @@ class CSVGraphApp(QMainWindow):
             self.hover_label.setPos(mouse_point.x(), mouse_point.y())
 
             # calling the histogram
-            df_histo = pd.DataFrame({'x': self.for_histo[0], 'y': self.for_histo[1]})
-            df_histo = df_histo[df_histo['x'].notna()]  # remove NaN
-            _range = (point[1], point[1] + int(self.bin_filter.text()))  # lower, upper
-            df_histo = df_histo[(df_histo['y'] >= _range[0]) & (df_histo['y'] <= _range[1])]
-            self.get_all_calculations(df_histo, region)
+            _range: tuple[int, int] = (point[1], point[1] + int(self.bin_filter.text()))  # lower, upper
+
+            df_histo: pd.DataFrame = self.prepare_df_for_histo(_range)
+
+            data_intervals = DataIntervals(interval=region, _df=df_histo)
+            self.update_ui_interval_calculations(data_intervals)
 
             self.histo.plot_histogram(df_histo, _range, mouse_relative.x(), mouse_relative.y())
         else:
             self.plot_widget.removeItem(self.hover_label)
             self.histo.close_histo()
 
-    def get_all_calculations(self, _df: pd, interval: str) -> None:
-        """ gets all calculations using df_histo in within the range"""
+    def prepare_df_for_histo(self, _range: tuple[int, int]) -> pd.DataFrame:
+        """ prepare the dataframe for histogram using the range in Y axis as filter"""
 
-        self.label_results.setText(f'Interval Results: {interval}')
-        self.result_average.setText(str(round(_df.loc[:, 'x'].mean(), 8)))
-        self.result_std.setText(str(round(_df.loc[:, 'x'].std(), 8)))
-        self.result_min.setText(str(round(_df.loc[:, 'x'].min(), 8)))
-        self.result_max.setText(str(round(_df.loc[:, 'x'].max(), 8)))
-        self.result_median.setText(str(round(_df.loc[:, 'x'].median(), 8)))
-        self.result_mode.setText(str(round(_df.loc[:, 'x'].mode()[0], 8)))
-        trimmed_mean_20 = float(stats.trim_mean(_df.x, 0.2))
-        self.result_trim_20.setText(str(round(trimmed_mean_20, 8)))
-        self.result_points.setText(str(_df.loc[:, 'x'].count()))
+        df_histo = pd.DataFrame({'x': self.for_histo[0], 'y': self.for_histo[1]})
+        df_histo = df_histo[df_histo['x'].notna()]  # remove NaN
+        df_histo = df_histo[(df_histo['y'] >= _range[0]) & (df_histo['y'] <= _range[1])]
 
-    def plot_defaults(self) -> None:
+        return df_histo
+
+    def update_ui_interval_calculations(self, data_intervals: DataIntervals) -> None:
+        """ gets and update all calculations using df_histo in within the range"""
+
+        self.label_results.setText(data_intervals.interval)
+        self.result_average.setText(str(data_intervals.mean))
+        self.result_std.setText(str(data_intervals.std))
+        self.result_min.setText(str(data_intervals.min))
+        self.result_max.setText(str(data_intervals.max))
+        self.result_median.setText(str(data_intervals.median))
+        self.result_mode.setText(str(data_intervals.mode))
+        self.result_trim_20.setText(str(data_intervals.trim20))
+        self.result_points.setText(str(data_intervals.points))
+
+    def get_plot_defaults(self) -> None:
         """ defaults for plotting """
         self.average_sensor_data: dict = dict()
         self.plot_widget.plotItem.vb.setLimits(xMin=int(self.x_min.text()),
@@ -650,72 +740,77 @@ class CSVGraphApp(QMainWindow):
                                                yMax=int(self.y_max.text()))
 
     def clear_plot(self) -> None:
+        """ reset only to plot each time """
+        self.average_data = None
+        self.plot_widget.removeItem(self.hover_label)
+        self.plot_widget.clear()
+        self.histo.close_histo()
+        self.histo.instances = []
+        self.selected_sensor_list = []
+        self.main_widget.update()
+
+    def clear_all_data(self) -> None:
         """ reset the UI as if it just started """
         self.df_csv1 = None
         self.df_csv2 = None
-        self.average_data = None
         self.csv1_title.setText(' ')
         self.csv2_title.setText(' ')
         while self.table_csv1.rowCount() > 0:
             self.table_csv1.removeRow(0)
         while self.table_csv2.rowCount() > 0:
             self.table_csv2.removeRow(0)
-        self.plot_widget.removeItem(self.hover_label)
-        self.plot_widget.clear()
-        self.histo.close_histo()
-        self.column_checkbox.clear()
-        self.histo.instances = []
-        self.action_add_box.setDisabled(True)
-        self.action_del_box.setDisabled(True)
-        for w in self._chk_slave_list:
-            self.left_panel.removeWidget(w)
-        self.widget_counter = self._params.current_labels
-        self._chk_slave_list = []
-        self.sensor_data_list = []
-        self.selected_sensor_list = []
-        self.main_widget.update()
+        self.ui_disable_all_combo_boxes()
+        self.action_enable_default_box.setDisabled(True)
+        self.action_enable_all_box.setDisabled(True)
+        self.action_disable_all_box.setDisabled(True)
+        self.clear_plot()
 
     def export_statistics(self):
-        if not self.sensor_data_list:
-            print(f'Export Begin: {len(self.sensor_data_list)}')
+        if not self.selected_sensor_list:
             self.error_box('No data to export.\n\n'
                            'Please, first load data to process, plot and then export.\n\n'
                            'Pay attention you might need to load 2 csv before attempting to plot.')
             return
 
-        print(f'Export Begin: {len(self.sensor_data_list)}')
-        for sensor_data in self.sensor_data_list:
-            # print(f"Sensor: {sensor_data.sensor_name}, X Data: {sensor_data.x_data}, Y Data: {sensor_data.y_data}")
-            print(f'Export Sensor: {sensor_data.sensor_name}')
+        print(f'Export Begin: {len(self.selected_sensor_list)} - {self.selected_sensor_list}')
 
-    def add_qcombobox(self) -> None:
+        fns: list[str] = self.df_csv1_name.split(' ')
+        complement: dict = {
+            'filename': self.df_csv1_name,
+            'gate': fns[0],
+            'year': fns[1],
+            'pile': fns[2],
+            'pos': fns[3],
+            'trial': fns[4],
+            'sensors': self.selected_sensor_list,
+            'low_filter': self.low_filter.text(),
+            'high_filter': self.high_filter.text(),
+            'step': self.bin_filter.text()
+        }
+        results: list[any] = []
+        step = int(self.bin_filter.text())
+        begin = self._params.data_min_elevation
+        end = begin + step
 
-        if self.widget_counter <= self._params.current_widgets:
-            _chk_slave = QComboBox()
-            _chk_slave.currentIndexChanged.connect(self.new_sensor_to_keep)
-            self.left_panel.addWidget(_chk_slave, self.widget_counter, 0, 1, 3)
+        while begin <= self._params.data_max_elevation:
+            _range = (begin, end)
+            interval = f'[{begin}, {end}]'
 
-            self.main_widget.update()
-            self.widget_counter += 1
+            df_histo: pd.DataFrame = self.prepare_df_for_histo(_range)
 
-            self._chk_slave_list.append(_chk_slave)
-            self.populate_checkbox(_chk_slave)
-        else:
-            self.error_box('The maximum number of slave plots are 7')
+            if not df_histo.empty:
+                data = DataIntervals(interval=interval, _df=df_histo)
+                results.append(data.to_dict(dc=complement))  # data complement
 
-    def remove_qcombobox(self):
-        n = len(self._chk_slave_list)  # last
+            begin = end
+            end = end + step
 
-        if n > 0:
-            w = self._chk_slave_list[n-1]  # last widget
-            self.left_panel.removeWidget(w)  # remove from UI widgets
-            self._chk_slave_list.remove(w)  # remove from list of widgets
-            self.widget_counter -= 1  # update counter positions
-            self.selected_sensor_list.pop()  # remove from list to plot
-        else:
-            self.error_box('No slave plots to delete')
+        results_df = pd.DataFrame(results)
 
-        self.main_widget.update()
+        file_path, _ = QFileDialog.getSaveFileName(self, "Save Excel File", os.getenv('HOME'), "Excel Files (*.xlsx);;All Files (*)")
+        if file_path:
+            results_df.to_excel(file_path, index=False)
+            print(f'Data exported to: {file_path}')
 
     def error_box(self, message) -> None:
         dlg = QMessageBox(self)

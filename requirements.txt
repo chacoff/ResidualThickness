@@ -10,6 +10,7 @@ kiwisolver==1.4.4
 matplotlib==3.7.2
 nuitka==2.4.7
 numpy==1.25.2
+openpyxl==3.1.5
 packaging==23.1
 pandas==2.0.3
 pefile==2023.2.7

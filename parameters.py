@@ -1,8 +1,11 @@
 class UIParameters:
+    # Debug flag
+    debug: bool = False                     # Debug flag
+
     # Titles & Widgets
     title_version: str = 'RDEsch v0.3b'     # title and version of the software
-    current_labels: int = 23                # current labels, i.e. widgets to start adding sub-plots
-    current_widgets: int = 29               # max counter of widgets to add a max of 8 sub-plots
+    current_labels: int = 22                # current labels, i.e. widgets to start adding sub-plots
+    current_widgets: int = 21               # current widget on the constructor
 
     # Histogram plot
     histo_width: int = 424                  # width of the histogram window
