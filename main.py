@@ -15,7 +15,7 @@ from methods import Methods
 from progressSpinner import Overlay
 from parameters import UIParameters
 from histogramWidget import HistogramApp
-from dataPlot import SensorData
+from dataPlot import SensorData, AverageData
 from threading import Thread
 import warnings
 warnings.filterwarnings("ignore")
@@ -611,7 +611,6 @@ class CSVGraphApp(QMainWindow):
         self.selected_sensor_list = self.get_enabled_sensors()
         x_histo = []
         y_histo = []
-        sensor_data_list = []
 
         for _sensor in self.selected_sensor_list:
             columns_to_keep = ['Elevation', _sensor]
@@ -629,9 +628,6 @@ class CSVGraphApp(QMainWindow):
             x_1 = filtered_thickness[_sensor]  # before: self.selected_sensor
             y = df_thickness.Elevation
             color = self.selected_sensor_colors[_sensor]
-
-            sensor_data = SensorData(sensor_name=_sensor, x_data=x_1, y_data=y)
-            sensor_data_list.append(sensor_data)
 
             scatter_plot = pg.ScatterPlotItem(size=2, pen=pg.mkPen(None), brush=pg.mkBrush(color + [64]))
             scatter_plot.setData(x=x_1, y=y)
@@ -768,6 +764,8 @@ class CSVGraphApp(QMainWindow):
             return
 
         print(f'Export Begin: {len(self.selected_sensor_list)} - {self.selected_sensor_list}')
+        print(self.average_data)
+        print(self.for_histo)
 
     def error_box(self, message) -> None:
         dlg = QMessageBox(self)
