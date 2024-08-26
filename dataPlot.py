@@ -5,6 +5,16 @@ from scipy import stats
 
 @dataclass
 class DataIntervals:
+    filename: str
+    gate: str
+    year: str
+    pile: str
+    pos: str
+    trial: str
+    sensors: list
+    low_filter: int
+    high_filter: int
+    step: int
     interval: str
     mean: float
     trim20: float
@@ -28,26 +38,36 @@ class DataIntervals:
 
     def __str__(self) -> str:
         return (
-            f"Interval: {self.interval}\n"
-            f"Mean: {self.mean}\n"
-            f"Trimmed Mean 20%: {self.trim20}\n"
-            f"Standard Deviation: {self.std}\n"
-            f"Mode: {self.mode}\n"
-            f"Median: {self.median}\n"
-            f"Min: {self.min}\n"
-            f"Max: {self.max}\n"
-            f"Points: {self.points}"
+            f'Interval: {self.interval}\n'
+            f'Mean: {self.mean}\n'
+            f'Trimmed Mean 20%: {self.trim20}\n'
+            f'Standard Deviation: {self.std}\n'
+            f'Mode: {self.mode}\n'
+            f'Median: {self.median}\n'
+            f'Min: {self.min}\n'
+            f'Max: {self.max}\n'
+            f'Points: {self.points}'
         )
 
-    def to_dict(self):
+    def to_dict(self, dc: dict):  # data complement
         return {
-            "Interval": self.interval,
-            "Mean": self.mean,
-            "Trimmed Mean 20%": self.trim20,
-            "Standard Deviation": self.std,
-            "Mode": self.mode,
-            "Median": self.median,
-            "Min": self.min,
-            "Max": self.max,
-            "Points": self.points
+            'FileName': dc['filename'],
+            'Gate': dc['gate'],
+            'Year': dc['year'],
+            'Pile': dc['pile'],
+            'Position': dc['pos'],
+            'Trial': dc['trial'],
+            'Sensors': dc['sensors'],
+            'LowFilter': dc['low_filter'],
+            'HighFilter': dc['high_filter'],
+            'Step': dc['step'],
+            'Interval': self.interval,
+            'Mean': self.mean,
+            'Trimmed Mean 20%': self.trim20,
+            'Standard Deviation': self.std,
+            'Mode': self.mode,
+            'Median': self.median,
+            'Min': self.min,
+            'Max': self.max,
+            'Points': self.points
         }

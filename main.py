@@ -774,6 +774,19 @@ class CSVGraphApp(QMainWindow):
 
         print(f'Export Begin: {len(self.selected_sensor_list)} - {self.selected_sensor_list}')
 
+        fns: list[str] = self.df_csv1_name.split(' ')
+        complement: dict = {
+            'filename': self.df_csv1_name,
+            'gate': fns[0],
+            'year': fns[1],
+            'pile': fns[2],
+            'pos': fns[3],
+            'trial': fns[4],
+            'sensors': self.selected_sensor_list,
+            'low_filter': self.low_filter.text(),
+            'high_filter': self.high_filter.text(),
+            'step': self.bin_filter.text()
+        }
         results: list[any] = []
         step = int(self.bin_filter.text())
         begin = self._params.data_min_elevation
@@ -786,8 +799,8 @@ class CSVGraphApp(QMainWindow):
             df_histo: pd.DataFrame = self.prepare_df_for_histo(_range)
 
             if not df_histo.empty:
-                data = DataIntervals(interval, df_histo)
-                results.append(data.to_dict())
+                data = DataIntervals(interval=interval, _df=df_histo)
+                results.append(data.to_dict(dc=complement))  # data complement
 
             begin = end
             end = end + step
@@ -797,7 +810,7 @@ class CSVGraphApp(QMainWindow):
         file_path, _ = QFileDialog.getSaveFileName(self, "Save Excel File", os.getenv('HOME'), "Excel Files (*.xlsx);;All Files (*)")
         if file_path:
             results_df.to_excel(file_path, index=False)
-            print("Data exported to 'data_intervals_results.xlsx'")
+            print(f'Data exported to: {file_path}')
 
     def error_box(self, message) -> None:
         dlg = QMessageBox(self)
