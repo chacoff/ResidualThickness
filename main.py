@@ -15,7 +15,7 @@ from methods import Methods
 from progressSpinner import Overlay
 from parameters import UIParameters
 from histogramWidget import HistogramApp
-from dataPlot import SensorData, AverageData
+from dataPlot import DataIntervals
 from threading import Thread
 import warnings
 warnings.filterwarnings("ignore")
@@ -640,7 +640,7 @@ class CSVGraphApp(QMainWindow):
                                                                                   min_elevation=self._params.data_min_elevation)
             x_histo = x_histo + x_1.values.tolist()
             y_histo = y_histo + y.values.tolist()
-            self.for_histo = [x_histo, y_histo]  # for histogram
+            self.for_histo = [x_histo, y_histo]  # for histogram & data export
 
         self.plot_averages()
         self.get_plot_defaults()
@@ -697,30 +697,39 @@ class CSVGraphApp(QMainWindow):
             self.hover_label.setPos(mouse_point.x(), mouse_point.y())
 
             # calling the histogram
-            df_histo = pd.DataFrame({'x': self.for_histo[0], 'y': self.for_histo[1]})
-            df_histo = df_histo[df_histo['x'].notna()]  # remove NaN
-            _range = (point[1], point[1] + int(self.bin_filter.text()))  # lower, upper
-            df_histo = df_histo[(df_histo['y'] >= _range[0]) & (df_histo['y'] <= _range[1])]
-            self.get_all_calculations(df_histo, region)
+            _range: tuple[int, int] = (point[1], point[1] + int(self.bin_filter.text()))  # lower, upper
+
+            df_histo: pd.DataFrame = self.prepare_df_for_histo(_range)
+
+            data_intervals = DataIntervals(interval=region, _df=df_histo)
+            self.update_ui_interval_calculations(data_intervals)
 
             self.histo.plot_histogram(df_histo, _range, mouse_relative.x(), mouse_relative.y())
         else:
             self.plot_widget.removeItem(self.hover_label)
             self.histo.close_histo()
 
-    def get_all_calculations(self, _df: pd, interval: str) -> None:
-        """ gets all calculations using df_histo in within the range"""
+    def prepare_df_for_histo(self, _range: tuple[int, int]) -> pd.DataFrame:
+        """ prepare the dataframe for histogram using the range in Y axis as filter"""
 
-        self.label_results.setText(f'Interval Results: {interval}')
-        self.result_average.setText(str(round(_df.loc[:, 'x'].mean(), 8)))
-        self.result_std.setText(str(round(_df.loc[:, 'x'].std(), 8)))
-        self.result_min.setText(str(round(_df.loc[:, 'x'].min(), 8)))
-        self.result_max.setText(str(round(_df.loc[:, 'x'].max(), 8)))
-        self.result_median.setText(str(round(_df.loc[:, 'x'].median(), 8)))
-        self.result_mode.setText(str(round(_df.loc[:, 'x'].mode()[0], 8)))
-        trimmed_mean_20 = float(stats.trim_mean(_df.x, 0.2))
-        self.result_trim_20.setText(str(round(trimmed_mean_20, 8)))
-        self.result_points.setText(str(_df.loc[:, 'x'].count()))
+        df_histo = pd.DataFrame({'x': self.for_histo[0], 'y': self.for_histo[1]})
+        df_histo = df_histo[df_histo['x'].notna()]  # remove NaN
+        df_histo = df_histo[(df_histo['y'] >= _range[0]) & (df_histo['y'] <= _range[1])]
+
+        return df_histo
+
+    def update_ui_interval_calculations(self, data_intervals: DataIntervals) -> None:
+        """ gets and update all calculations using df_histo in within the range"""
+
+        self.label_results.setText(data_intervals.interval)
+        self.result_average.setText(str(data_intervals.mean))
+        self.result_std.setText(str(data_intervals.std))
+        self.result_min.setText(str(data_intervals.min))
+        self.result_max.setText(str(data_intervals.max))
+        self.result_median.setText(str(data_intervals.median))
+        self.result_mode.setText(str(data_intervals.mode))
+        self.result_trim_20.setText(str(data_intervals.trim20))
+        self.result_points.setText(str(data_intervals.points))
 
     def get_plot_defaults(self) -> None:
         """ defaults for plotting """
@@ -764,8 +773,31 @@ class CSVGraphApp(QMainWindow):
             return
 
         print(f'Export Begin: {len(self.selected_sensor_list)} - {self.selected_sensor_list}')
-        print(self.average_data)
-        print(self.for_histo)
+
+        results: list[any] = []
+        step = int(self.bin_filter.text())
+        begin = self._params.data_min_elevation
+        end = begin + step
+
+        while begin <= self._params.data_max_elevation:
+            _range = (begin, end)
+            interval = f'[{begin}, {end}]'
+
+            df_histo: pd.DataFrame = self.prepare_df_for_histo(_range)
+
+            if not df_histo.empty:
+                data = DataIntervals(interval, df_histo)
+                results.append(data.to_dict())
+
+            begin = end
+            end = end + step
+
+        results_df = pd.DataFrame(results)
+
+        file_path, _ = QFileDialog.getSaveFileName(self, "Save Excel File", os.getenv('HOME'), "Excel Files (*.xlsx);;All Files (*)")
+        if file_path:
+            results_df.to_excel(file_path, index=False)
+            print("Data exported to 'data_intervals_results.xlsx'")
 
     def error_box(self, message) -> None:
         dlg = QMessageBox(self)
