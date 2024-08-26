@@ -42,6 +42,8 @@ class CSVGraphApp(QMainWindow):
         self.widget_init: int = self._params.current_widgets
         self.color_pickers = []
 
+        #region UI-region
+
         # UI Title
         font = QFont()
         font.setPixelSize(16)
@@ -380,6 +382,8 @@ class CSVGraphApp(QMainWindow):
         self.overlay = Overlay(self.centralWidget())
         self.overlay.hide()
 
+        #endregion
+
     def open_csv(self) -> None:
 
         file_name, _ = QFileDialog.getOpenFileName(self,
@@ -476,7 +480,7 @@ class CSVGraphApp(QMainWindow):
 
             color_picker = QLabel()  # Label to show the color
             color_picker.setFixedSize(20, 20)  # Set a fixed size for the color box
-            color_picker.setStyleSheet('background-color: gray;')  # Default color
+            color_picker.setStyleSheet('background-color: gray;')
 
             self.color_pickers.append((combo_box, color_picker))
             color_picker.mousePressEvent = lambda event, cb=combo_box, cp=color_picker: self.open_color_dialog(cb, cp)
@@ -489,10 +493,11 @@ class CSVGraphApp(QMainWindow):
     def open_color_dialog(self, combo_box, color_picker):
         color = QColorDialog.getColor()  # Open the color dialog
         if color.isValid():
+            rgb_values = [color.red(), color.green(), color.blue()]
             color_name = color.name()  # Get the color name
             color_picker.setStyleSheet(f'background-color: {color_name};')  # Set the color to the picker
             sensor_name = combo_box.objectName()
-            self.selected_sensor_colors[sensor_name] = color_name
+            self.selected_sensor_colors[sensor_name] = rgb_values
 
     def combo_box_sensor_call(self, index):
         """ debug method for all combo boxes"""
@@ -521,6 +526,8 @@ class CSVGraphApp(QMainWindow):
         return enabled_sensors
 
     def enable_default_combo_boxes(self) -> None:
+
+        j = 1  # the counter for the sensors, it should go from 1 to 8
         for i in range(self.left_panel.count()):
             widget = self.left_panel.itemAt(i).widget()
             if isinstance(widget, QComboBox):
@@ -528,25 +535,51 @@ class CSVGraphApp(QMainWindow):
                 index: int = 0 if widget.objectName() in ['Sensor1', 'Sensor2', 'Sensor7', 'Sensor8'] else 1
                 widget.setCurrentIndex(index)
 
+                sensor: str = self.color_pickers[j-1][0].objectName()
+                picker: QLabel = self.color_pickers[j-1][1]
+                self.set_picker_color(sensor, picker, index)
+                j += 1
+
+    def set_picker_color(self, sensor: str, picker: QLabel, status: int) -> None:
+        rgb_values: list[int, int, int] = self.methods.give_me_a_color(sensor) if status == 1 else [127, 127, 127]
+        self.selected_sensor_colors[sensor] = rgb_values
+        rgb_string = f'rgb({rgb_values[0]}, {rgb_values[1]}, {rgb_values[2]})'
+        picker.setStyleSheet(f'background-color: {rgb_string};')  # Default color
+
     def enable_all_combo_boxes(self) -> None:
+        j = 1
         for i in range(self.left_panel.count()):
             widget = self.left_panel.itemAt(i).widget()
             if isinstance(widget, QComboBox):
                 widget.setEnabled(True)  # Enable the combo box in case is disable
                 widget.setCurrentIndex(1)  # Set to the corresponding sensor
+                sensor: str = self.color_pickers[j - 1][0].objectName()
+                picker: QLabel = self.color_pickers[j - 1][1]
+                self.set_picker_color(sensor, picker, 1)
+                j += 1
 
     def disable_all_combo_boxes(self) -> None:
+        j = 1
         for i in range(self.left_panel.count()):
             widget = self.left_panel.itemAt(i).widget()
             if isinstance(widget, QComboBox):
                 widget.setCurrentIndex(0)  # Set to the Disable
+                sensor: str = self.color_pickers[j - 1][0].objectName()
+                picker: QLabel = self.color_pickers[j - 1][1]
+                self.set_picker_color(sensor, picker, 0)
+                j += 1
 
     def ui_disable_all_combo_boxes(self) -> None:
+        j = 1
         for i in range(self.left_panel.count()):
             widget = self.left_panel.itemAt(i).widget()
             if isinstance(widget, QComboBox):
                 widget.setCurrentIndex(0)  # Set to the Disable
                 widget.setEnabled(False)  # UI disable the widget
+                sensor: str = self.color_pickers[j - 1][0].objectName()
+                picker: QLabel = self.color_pickers[j - 1][1]
+                self.set_picker_color(sensor, picker, 0)
+                j += 1
 
     def plot_data(self) -> None:
         """ plot data """
@@ -585,8 +618,7 @@ class CSVGraphApp(QMainWindow):
 
             x_1 = filtered_thickness[_sensor]  # before: self.selected_sensor
             y = df_thickness.Elevation
-            color = self.methods.give_me_a_color(_sensor)
-            print(self.selected_sensor_colors)
+            color = self.selected_sensor_colors[_sensor]
 
             sensor_data = SensorData(sensor_name=_sensor, x_data=x_1, y_data=y)
             sensor_data_list.append(sensor_data)
