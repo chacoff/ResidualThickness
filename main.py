@@ -17,6 +17,8 @@ from parameters import UIParameters
 from histogramWidget import HistogramApp
 from dataPlot import SensorData
 from threading import Thread
+import warnings
+warnings.filterwarnings("ignore")
 
 
 class CSVGraphApp(QMainWindow):
@@ -501,9 +503,17 @@ class CSVGraphApp(QMainWindow):
 
     def combo_box_sensor_call(self, index):
         """ debug method for all combo boxes"""
+        # TODO keep the color somewhere to not lose the custom choice between different sessions
 
         sender = self.sender()  # Get the combo box that triggered the event
         sensor_name = sender.objectName()  # Get the name of the sensor (Sensor1, Sensor2, etc.)
+        sensor_index = int(list(sensor_name)[-1]) - 1
+
+        if index == 0:
+            self.set_picker_color(sensor_name, self.color_pickers[sensor_index][1], index)
+
+        if index == 1:
+            self.set_picker_color(sensor_name, self.color_pickers[sensor_index][1], index)
 
         if self._params.debug:
             _text: str = f'{sensor_name} Disable' if index == 0 else f'{sensor_name} Enable'
