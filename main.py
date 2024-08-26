@@ -292,11 +292,14 @@ class CSVGraphApp(QMainWindow):
         self.plot_export.triggered.connect(self.export_statistics)
         self.plot_clear = QAction('Clear Plot', self)
         self.plot_clear.triggered.connect(self.clear_plot)
+        self.data_clear = QAction('Clear Data', self)
+        self.data_clear.triggered.connect(self.clear_all_data)
 
         toolbar.addAction(self.load_csv1)
         toolbar.addAction(self.plot_button)
         toolbar.addAction(self.plot_export)
         toolbar.addAction(self.plot_clear)
+        toolbar.addAction(self.data_clear)
         toolbar.setMovable(False)
         toolbar.setIconSize(QSize(32, 32))
         toolbar.setStyleSheet('''
@@ -306,7 +309,6 @@ class CSVGraphApp(QMainWindow):
                         margin-top: 6px;
                         padding-top: 4px;
                         background: transparent; 
-                        border: none; 
                         height: 64px;
                     }
 
@@ -502,12 +504,9 @@ class CSVGraphApp(QMainWindow):
         for i in range(self.left_panel.count()):
             widget = self.left_panel.itemAt(i).widget()
             if isinstance(widget, QComboBox):
-                widget.setEnabled(True)  # Enable the combo box in case is disable
-                if widget.currentText() in ['Sensor1', 'Sensor2', 'Sensor7', 'Sensor8']:
-                    print('jereeee')
-                    widget.setCurrentIndex(0)  # Set to disable
-                else:
-                    widget.setCurrentIndex(1)  # Set to the corresponding sensor
+                widget.setEnabled(True)
+                index: int = 0 if widget.objectName() in ['Sensor1', 'Sensor2', 'Sensor7', 'Sensor8'] else 1
+                widget.setCurrentIndex(index)
 
     def enable_all_combo_boxes(self) -> None:
         for i in range(self.left_panel.count()):
@@ -522,9 +521,17 @@ class CSVGraphApp(QMainWindow):
             if isinstance(widget, QComboBox):
                 widget.setCurrentIndex(0)  # Set to the Disable
 
+    def ui_disable_all_combo_boxes(self) -> None:
+        for i in range(self.left_panel.count()):
+            widget = self.left_panel.itemAt(i).widget()
+            if isinstance(widget, QComboBox):
+                widget.setCurrentIndex(0)  # Set to the Disable
+                widget.setEnabled(False)  # UI disable the widget
+
     def plot_data(self) -> None:
         """ plot data """
 
+        self.clear_plot()
         self.selected_sensor_list = self.get_enabled_sensors()
 
         self.overlay.show()
@@ -665,22 +672,30 @@ class CSVGraphApp(QMainWindow):
                                                yMax=int(self.y_max.text()))
 
     def clear_plot(self) -> None:
-        """ reset the UI as if it just started """
-        self.df_csv1 = None
-        self.df_csv2 = None
+        """ reset only to plot each time """
         self.average_data = None
-        self.csv1_title.setText(' ')
-        self.csv2_title.setText(' ')
-        while self.table_csv1.rowCount() > 0:
-            self.table_csv1.removeRow(0)
-        while self.table_csv2.rowCount() > 0:
-            self.table_csv2.removeRow(0)
         self.plot_widget.removeItem(self.hover_label)
         self.plot_widget.clear()
         self.histo.close_histo()
         self.histo.instances = []
         self.selected_sensor_list = []
         self.main_widget.update()
+
+    def clear_all_data(self) -> None:
+        """ reset the UI as if it just started """
+        self.df_csv1 = None
+        self.df_csv2 = None
+        self.csv1_title.setText(' ')
+        self.csv2_title.setText(' ')
+        while self.table_csv1.rowCount() > 0:
+            self.table_csv1.removeRow(0)
+        while self.table_csv2.rowCount() > 0:
+            self.table_csv2.removeRow(0)
+        self.ui_disable_all_combo_boxes()
+        self.action_enable_default_box.setDisabled(True)
+        self.action_enable_all_box.setDisabled(True)
+        self.action_disable_all_box.setDisabled(True)
+        self.clear_plot()
 
     def export_statistics(self):
         if not self.selected_sensor_list:
