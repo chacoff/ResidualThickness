@@ -430,6 +430,8 @@ class CSVGraphApp(QMainWindow):
         self.action_enable_all_box.setDisabled(False)
         self.action_disable_all_box.setDisabled(False)
 
+        self.plot_data()
+
     def process_csv1_thickness(self, name_csv_thickness: str, _delimiter: str) -> None:
         self.df_csv1_name = QFileInfo(name_csv_thickness + '.csv').baseName()  # fileName() to have it with the extension
         self.read_csv_header(name_csv_thickness + '.csv', self.table_csv1, self.df_csv1_name, self.csv1_title)
@@ -598,7 +600,7 @@ class CSVGraphApp(QMainWindow):
 
         self.clear_plot()
 
-        self.overlay.show()
+        # self.overlay.show() TODO
 
         if self.df_csv1 is None or self.df_csv2 is None:
             self.error_box('No data.\n\n'
@@ -646,7 +648,7 @@ class CSVGraphApp(QMainWindow):
 
         self.plot_averages()
         self.get_plot_defaults()
-        self.overlay.emitter.trigger_signal()
+        # self.overlay.emitter.trigger_signal() TODO
 
     def plot_averages(self) -> None:
         """ plot the averages of data according the quantity of selected sensors
