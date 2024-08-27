@@ -26,15 +26,26 @@ class DataIntervals:
     points: int
 
     def __init__(self, interval: str, _df: pd.DataFrame):
-        self.interval = f'Interval Results: {interval}'
-        self.mean = round(_df.loc[:, 'x'].mean(), 8)
-        self.trim20 = round(float(stats.trim_mean(_df.x, 0.2)), 8)
-        self.std = round(_df.loc[:, 'x'].std(), 8)
-        self.mode = round(_df.loc[:, 'x'].mode()[0], 8)
-        self.median = round(_df.loc[:, 'x'].median(), 8)
-        self.min = round(_df.loc[:, 'x'].min(), 8)
-        self.max = round(_df.loc[:, 'x'].max(), 8)
-        self.points = _df.loc[:, 'x'].count()
+        if not _df.empty:
+            self.interval = f'Interval Results: {interval}'
+            self.mean = round(_df.loc[:, 'x'].mean(), 8)
+            self.trim20 = round(float(stats.trim_mean(_df.x, 0.2)), 8)
+            self.std = round(_df.loc[:, 'x'].std(), 8)
+            self.mode = round(_df.loc[:, 'x'].mode()[0], 8)
+            self.median = round(_df.loc[:, 'x'].median(), 8)
+            self.min = round(_df.loc[:, 'x'].min(), 8)
+            self.max = round(_df.loc[:, 'x'].max(), 8)
+            self.points = _df.loc[:, 'x'].count()
+        else:
+            self.interval = f'Interval Results:'
+            self.mean = 0.0000
+            self.trim20 = 0.0000
+            self.std = 0.0000
+            self.mode = 0.0000
+            self.median = 0.0000
+            self.min = 0.0000
+            self.max = 0.0000
+            self.points = 0
 
     def __str__(self) -> str:
         return (

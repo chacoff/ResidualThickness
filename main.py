@@ -430,6 +430,8 @@ class CSVGraphApp(QMainWindow):
         self.action_enable_all_box.setDisabled(False)
         self.action_disable_all_box.setDisabled(False)
 
+        self.plot_data()
+
     def process_csv1_thickness(self, name_csv_thickness: str, _delimiter: str) -> None:
         self.df_csv1_name = QFileInfo(name_csv_thickness + '.csv').baseName()  # fileName() to have it with the extension
         self.read_csv_header(name_csv_thickness + '.csv', self.table_csv1, self.df_csv1_name, self.csv1_title)
@@ -468,8 +470,10 @@ class CSVGraphApp(QMainWindow):
 
         self.statusBar().showMessage(f"Loaded rows from {_csv}")
 
-    def populate_sensor_combo_boxes(self):
-        """ add the combo boxes with the sensors with the option to enable and disable each sensor"""
+    def populate_sensor_combo_boxes(self) -> None:
+        """ add the combo boxes with the sensors with the option to enable and disable each sensor.
+        It runs once at init """
+
         for i in range(1, 9):  # Loop from 1 to 8
             sensor_name = f"Sensor{i}"
 
@@ -492,7 +496,7 @@ class CSVGraphApp(QMainWindow):
 
             self.widget_counter += 1
 
-    def open_color_dialog(self, combo_box, color_picker):
+    def open_color_dialog(self, combo_box, color_picker) -> None:
         color = QColorDialog.getColor()  # Open the color dialog
         if color.isValid():
             rgb_values = [color.red(), color.green(), color.blue()]
@@ -501,7 +505,7 @@ class CSVGraphApp(QMainWindow):
             sensor_name = combo_box.objectName()
             self.selected_sensor_colors[sensor_name] = rgb_values
 
-    def combo_box_sensor_call(self, index):
+    def combo_box_sensor_call(self, index) -> None:
         """ debug method for all combo boxes"""
         # TODO keep the color somewhere to not lose the custom choice between different sessions
 
@@ -596,7 +600,7 @@ class CSVGraphApp(QMainWindow):
 
         self.clear_plot()
 
-        self.overlay.show()
+        # self.overlay.show() TODO
 
         if self.df_csv1 is None or self.df_csv2 is None:
             self.error_box('No data.\n\n'
@@ -644,7 +648,7 @@ class CSVGraphApp(QMainWindow):
 
         self.plot_averages()
         self.get_plot_defaults()
-        self.overlay.emitter.trigger_signal()
+        # self.overlay.emitter.trigger_signal() TODO
 
     def plot_averages(self) -> None:
         """ plot the averages of data according the quantity of selected sensors
@@ -763,9 +767,10 @@ class CSVGraphApp(QMainWindow):
         self.action_enable_default_box.setDisabled(True)
         self.action_enable_all_box.setDisabled(True)
         self.action_disable_all_box.setDisabled(True)
+        self.update_ui_interval_calculations(DataIntervals('', pd.DataFrame()))
         self.clear_plot()
 
-    def export_statistics(self):
+    def export_statistics(self) -> None:
         if not self.selected_sensor_list:
             self.error_box('No data to export.\n\n'
                            'Please, first load data to process, plot and then export.\n\n'
@@ -810,7 +815,7 @@ class CSVGraphApp(QMainWindow):
         file_path, _ = QFileDialog.getSaveFileName(self, "Save Excel File", os.getenv('HOME'), "Excel Files (*.xlsx);;All Files (*)")
         if file_path:
             results_df.to_excel(file_path, index=False)
-            print(f'Data exported to: {file_path}')
+            self.statusBar().showMessage(f'Data exported to: {file_path}')
 
     def error_box(self, message) -> None:
         dlg = QMessageBox(self)
