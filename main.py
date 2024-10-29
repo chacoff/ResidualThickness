@@ -395,6 +395,7 @@ class CSVGraphApp(QMainWindow):
         if not file_name:
             return
 
+        self.clear_all_data()
         t0 = Thread(target=self.process_open_csv, name='open', args=(file_name,))
         t0.start()
         t0.join()
