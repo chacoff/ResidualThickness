@@ -377,7 +377,7 @@ class CSVGraphApp(QMainWindow):
         self.setCentralWidget(self.main_widget)
 
         self.statusBar().showMessage(f"Ready.")
-        # self.showMaximized()  # TODO commented while i fix the centering of the spinner
+        self.showMaximized()  # TODO commented while i fix the centering of the spinner
         # GUI ----------
 
         # Spinner ----------
@@ -408,20 +408,23 @@ class CSVGraphApp(QMainWindow):
         is_thickness_ok = self.is_file_csv(name_csv_thickness)
         is_amplitude_ok = self.is_file_csv(name_csv_amplitude)
 
-        if is_amplitude_ok and is_thickness_ok:
-            self.process_csv1_thickness(name_csv_thickness, self._delimiter)
-            self.process_csv2_amplitude(name_csv_amplitude, self._delimiter)
-            self.enable_default_combo_boxes()
-            self.action_enable_default_box.setDisabled(False)
-            self.action_enable_all_box.setDisabled(False)
-            self.action_disable_all_box.setDisabled(False)
-
-            self.plot_data()
-        else:
+        if not is_amplitude_ok or not is_thickness_ok:
             self.statusBar().showMessage(f'Amplitude or Thickness file does not exist.')
             self.error_box('Attention!. '
-                           '\nAmplitude or Thickness file does not exist.'
-                           '\nPlease check the names follow the format: **** - AMP.csv')
+                           '\n\nAmplitude or Thickness file does not exist.'
+                           '\n\nPlease, check the names follow the example format'
+                           '\n\n - Amplitude file: "G2 2012 C1 gauche 1 - AMP.csv"'
+                           '\n\n - Thickness file: "G2 2012 C1 gauche 1.csv"')
+            return
+
+        self.process_csv1_thickness(name_csv_thickness, self._delimiter)
+        self.process_csv2_amplitude(name_csv_amplitude, self._delimiter)
+        self.enable_default_combo_boxes()
+        self.action_enable_default_box.setDisabled(False)
+        self.action_enable_all_box.setDisabled(False)
+        self.action_disable_all_box.setDisabled(False)
+
+        self.plot_data()
 
     @staticmethod
     def get_csv_filenames(_name: str) -> tuple[str, str]:
