@@ -16,7 +16,6 @@ from progressSpinner import Overlay
 from parameters import UIParameters
 from histogramWidget import HistogramApp
 from dataPlot import DataIntervals
-from threading import Thread
 import warnings
 warnings.filterwarnings("ignore")
 
@@ -42,7 +41,8 @@ class CSVGraphApp(QMainWindow):
         self.for_histo: list = []
         self.widget_counter: int = self._params.current_labels
         self.widget_init: int = self._params.current_widgets
-        self.color_pickers = []
+        self.color_pickers: list[any] = []
+        self._delimiter: str = ''
 
         #region UI-region
 
@@ -377,12 +377,12 @@ class CSVGraphApp(QMainWindow):
         self.setCentralWidget(self.main_widget)
 
         self.statusBar().showMessage(f"Ready.")
-        # self.showMaximized()  # TODO commented while i fix the centering of the spinner
+        self.showMaximized()  # TODO commented while i fix the centering of the spinner
         # GUI ----------
 
         # Spinner ----------
-        self.overlay = Overlay(self.centralWidget())
-        self.overlay.hide()
+        # self.overlay = Overlay(self.centralWidget())
+        # self.overlay.hide()
 
         #endregion
 
@@ -395,36 +395,30 @@ class CSVGraphApp(QMainWindow):
         if not file_name:
             return
 
-        t0 = Thread(target=self.process_open_csv, name='open', args=(file_name,))
-        t0.start()
-        t0.join()
+        self.clear_all_data()
+        self.process_open_csv(file_name)
 
     def process_open_csv(self, file_name: str) -> None:
 
         self.methods.set_data_delimiter(file_name)
-        _delimiter: str = self.methods.get_data_delimiter()
-        # print(f'delimiter is: {_delimiter}')
+        self._delimiter: str = self.methods.get_data_delimiter()
 
-        data_path = QFileInfo(file_name).absolutePath()
-        is_amplitude = 'AMP' in QFileInfo(file_name).baseName()
+        name_csv_thickness, name_csv_amplitude = self.get_csv_filenames(file_name)
 
-        if is_amplitude:
-            name = QFileInfo(file_name).baseName()  # .fileName()
-            name_csv_amplitude = os.path.join(data_path, name)
-            size = len(name_csv_amplitude)
-            name_csv_thickness = name_csv_amplitude[:size - 6]
-        else:  # it is a thickness file
-            name = QFileInfo(file_name).baseName()  # .fileName()
-            name_csv_thickness = os.path.join(data_path, name)
-            name_csv_amplitude = name_csv_thickness + ' - AMP'
+        is_thickness_ok = self.is_file_csv(name_csv_thickness)
+        is_amplitude_ok = self.is_file_csv(name_csv_amplitude)
 
-        t1 = Thread(target=self.process_csv1_thickness, name='csv1', args=(name_csv_thickness, _delimiter))
-        t2 = Thread(target=self.process_csv2_amplitude, name='csv2', args=(name_csv_amplitude, _delimiter))
-        t1.start()
-        t2.start()
-        t1.join()
-        t2.join()
+        if not is_amplitude_ok or not is_thickness_ok:
+            self.statusBar().showMessage(f'Amplitude or Thickness file does not exist.')
+            self.error_box('Attention!. '
+                           '\n\nAmplitude or Thickness file does not exist.'
+                           '\n\nPlease, check the names follow the example format'
+                           '\n\n - Amplitude file: "G2 2012 C1 gauche 1 - AMP.csv"'
+                           '\n\n - Thickness file: "G2 2012 C1 gauche 1.csv"')
+            return
 
+        self.process_csv1_thickness(name_csv_thickness, self._delimiter)
+        self.process_csv2_amplitude(name_csv_amplitude, self._delimiter)
         self.enable_default_combo_boxes()
         self.action_enable_default_box.setDisabled(False)
         self.action_enable_all_box.setDisabled(False)
@@ -432,8 +426,37 @@ class CSVGraphApp(QMainWindow):
 
         self.plot_data()
 
+    @staticmethod
+    def get_csv_filenames(_name: str) -> tuple[str, str]:
+        """ get csv file names based on the first opened file """
+
+        data_path: str = QFileInfo(_name).absolutePath()
+        name: str = QFileInfo(_name).baseName()  # .fileName()
+        is_amplitude: bool = '- AMP' in QFileInfo(_name).baseName()
+
+        _csv_amplitude: str = ''
+        _csv_thickness: str = ''
+
+        if is_amplitude:
+            _csv_amplitude = os.path.join(data_path, name)
+            size = len(_csv_amplitude)
+            _csv_thickness = _csv_amplitude[:size - 6]
+        else:  # it is a thickness file
+            _csv_thickness = os.path.join(data_path, name)
+            _csv_amplitude = _csv_thickness + ' - AMP'
+
+        return _csv_thickness, _csv_amplitude
+
+    @staticmethod
+    def is_file_csv(file: str) -> bool:
+        """ Check if csv file exist before processing """
+        file: str = file + '.csv'
+        if not os.path.isfile(file):
+            return False
+        return True
+
     def process_csv1_thickness(self, name_csv_thickness: str, _delimiter: str) -> None:
-        self.df_csv1_name = QFileInfo(name_csv_thickness + '.csv').baseName()  # fileName() to have it with the extension
+        self.df_csv1_name = QFileInfo(name_csv_thickness + '.csv').baseName()  # fileName() to have it with extension
         self.read_csv_header(name_csv_thickness + '.csv', self.table_csv1, self.df_csv1_name, self.csv1_title)
         self.df_csv1 = self.methods.return_dataframe(name_csv_thickness + '.csv', delimiter=_delimiter, skip=47)
 
@@ -468,7 +491,8 @@ class CSVGraphApp(QMainWindow):
             value_item.setFlags(Qt.ItemFlag.ItemIsEnabled)
             _table_widget.setItem(row, 1, value_item)
 
-        self.statusBar().showMessage(f"Loaded rows from {_csv}")
+        self.statusBar().showMessage(f'Loaded rows from "{self.df_csv1_name}.csv" and '
+                                     f'"{self.df_csv2_name}.csv" with delimiter: "{self._delimiter}"')
 
     def populate_sensor_combo_boxes(self) -> None:
         """ add the combo boxes with the sensors with the option to enable and disable each sensor.
@@ -825,9 +849,9 @@ class CSVGraphApp(QMainWindow):
         dlg.setText(message)
         dlg.exec()
 
-    def resizeEvent(self, event):
-        self.overlay.resize(event.size())
-        event.accept()
+    # def resizeEvent(self, event):
+    #     self.overlay.resize(event.size())
+    #     event.accept()
 
 
 if __name__ == "__main__":
