@@ -381,8 +381,8 @@ class CSVGraphApp(QMainWindow):
         # GUI ----------
 
         # Spinner ----------
-        self.overlay = Overlay(self.centralWidget())
-        self.overlay.hide()
+        # self.overlay = Overlay(self.centralWidget())
+        # self.overlay.hide()
 
         #endregion
 
@@ -849,9 +849,9 @@ class CSVGraphApp(QMainWindow):
         dlg.setText(message)
         dlg.exec()
 
-    def resizeEvent(self, event):
-        self.overlay.resize(event.size())
-        event.accept()
+    # def resizeEvent(self, event):
+    #     self.overlay.resize(event.size())
+    #     event.accept()
 
 
 if __name__ == "__main__":
