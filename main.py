@@ -42,7 +42,8 @@ class CSVGraphApp(QMainWindow):
         self.for_histo: list = []
         self.widget_counter: int = self._params.current_labels
         self.widget_init: int = self._params.current_widgets
-        self.color_pickers = []
+        self.color_pickers: list[any] = []
+        self._delimiter: str = ''
 
         #region UI-region
 
@@ -404,34 +405,62 @@ class CSVGraphApp(QMainWindow):
 
         self.methods.set_data_delimiter(file_name)
         _delimiter: str = self.methods.get_data_delimiter()
+        self._delimiter = _delimiter
         # print(f'delimiter is: {_delimiter}')
 
-        data_path = QFileInfo(file_name).absolutePath()
-        is_amplitude = 'AMP' in QFileInfo(file_name).baseName()
+        name_csv_thickness, name_csv_amplitude = self.get_csv_filenames(file_name)
+
+        is_amplitude_ok = self.is_file_csv(name_csv_amplitude)
+        is_thickness_ok = self.is_file_csv(name_csv_thickness)
+
+        if is_amplitude_ok and is_thickness_ok:
+            t1 = Thread(target=self.process_csv1_thickness, name='csv1', args=(name_csv_thickness, _delimiter))
+            t2 = Thread(target=self.process_csv2_amplitude, name='csv2', args=(name_csv_amplitude, _delimiter))
+            t1.start()
+            t2.start()
+            t1.join()
+            t2.join()
+
+            self.enable_default_combo_boxes()
+            self.action_enable_default_box.setDisabled(False)
+            self.action_enable_all_box.setDisabled(False)
+            self.action_disable_all_box.setDisabled(False)
+
+            self.plot_data()
+        else:
+            self.statusBar().showMessage(f'Amplitude or Thickness file does not exist.')
+            # self.error_box('Attention!. '
+            #                '\nAmplitude or Thickness file does not exist.'
+            #                '\nPlease check the names follow the format: **** - AMP.csv')
+
+    @staticmethod
+    def get_csv_filenames(_name: str) -> tuple[str, str]:
+        """ get csv file names based on the first opened file """
+
+        data_path: str = QFileInfo(_name).absolutePath()
+        name: str = QFileInfo(_name).baseName()  # .fileName()
+        is_amplitude: bool = '- AMP' in QFileInfo(_name).baseName()
+
+        _csv_amplitude: str = ''
+        _csv_thickness: str = ''
 
         if is_amplitude:
-            name = QFileInfo(file_name).baseName()  # .fileName()
-            name_csv_amplitude = os.path.join(data_path, name)
-            size = len(name_csv_amplitude)
-            name_csv_thickness = name_csv_amplitude[:size - 6]
+            _csv_amplitude = os.path.join(data_path, name)
+            size = len(_csv_amplitude)
+            _csv_thickness = _csv_amplitude[:size - 6]
         else:  # it is a thickness file
-            name = QFileInfo(file_name).baseName()  # .fileName()
-            name_csv_thickness = os.path.join(data_path, name)
-            name_csv_amplitude = name_csv_thickness + ' - AMP'
+            _csv_thickness = os.path.join(data_path, name)
+            _csv_amplitude = _csv_thickness + ' - AMP'
 
-        t1 = Thread(target=self.process_csv1_thickness, name='csv1', args=(name_csv_thickness, _delimiter))
-        t2 = Thread(target=self.process_csv2_amplitude, name='csv2', args=(name_csv_amplitude, _delimiter))
-        t1.start()
-        t2.start()
-        t1.join()
-        t2.join()
+        return _csv_thickness, _csv_amplitude
 
-        self.enable_default_combo_boxes()
-        self.action_enable_default_box.setDisabled(False)
-        self.action_enable_all_box.setDisabled(False)
-        self.action_disable_all_box.setDisabled(False)
-
-        self.plot_data()
+    @staticmethod
+    def is_file_csv(file: str) -> bool:
+        """ Check if csv file exist before processing """
+        file: str = file + '.csv'
+        if not os.path.isfile(file):
+            return False
+        return True
 
     def process_csv1_thickness(self, name_csv_thickness: str, _delimiter: str) -> None:
         self.df_csv1_name = QFileInfo(name_csv_thickness + '.csv').baseName()  # fileName() to have it with the extension
@@ -469,7 +498,8 @@ class CSVGraphApp(QMainWindow):
             value_item.setFlags(Qt.ItemFlag.ItemIsEnabled)
             _table_widget.setItem(row, 1, value_item)
 
-        self.statusBar().showMessage(f"Loaded rows from {_csv}")
+        self.statusBar().showMessage(f'Loaded rows from "{self.df_csv1_name}.csv" and '
+                                     f'"{self.df_csv2_name}.csv" with delimiter: "{self._delimiter}"')
 
     def populate_sensor_combo_boxes(self) -> None:
         """ add the combo boxes with the sensors with the option to enable and disable each sensor.
