@@ -16,7 +16,6 @@ from progressSpinner import Overlay
 from parameters import UIParameters
 from histogramWidget import HistogramApp
 from dataPlot import DataIntervals
-from threading import Thread
 import warnings
 warnings.filterwarnings("ignore")
 
@@ -397,30 +396,21 @@ class CSVGraphApp(QMainWindow):
             return
 
         self.clear_all_data()
-        t0 = Thread(target=self.process_open_csv, name='open', args=(file_name,))
-        t0.start()
-        t0.join()
+        self.process_open_csv(file_name)
 
     def process_open_csv(self, file_name: str) -> None:
 
         self.methods.set_data_delimiter(file_name)
-        _delimiter: str = self.methods.get_data_delimiter()
-        self._delimiter = _delimiter
-        # print(f'delimiter is: {_delimiter}')
+        self._delimiter: str = self.methods.get_data_delimiter()
 
         name_csv_thickness, name_csv_amplitude = self.get_csv_filenames(file_name)
 
-        is_amplitude_ok = self.is_file_csv(name_csv_amplitude)
         is_thickness_ok = self.is_file_csv(name_csv_thickness)
+        is_amplitude_ok = self.is_file_csv(name_csv_amplitude)
 
         if is_amplitude_ok and is_thickness_ok:
-            t1 = Thread(target=self.process_csv1_thickness, name='csv1', args=(name_csv_thickness, _delimiter))
-            t2 = Thread(target=self.process_csv2_amplitude, name='csv2', args=(name_csv_amplitude, _delimiter))
-            t1.start()
-            t2.start()
-            t1.join()
-            t2.join()
-
+            self.process_csv1_thickness(name_csv_thickness, self._delimiter)
+            self.process_csv2_amplitude(name_csv_amplitude, self._delimiter)
             self.enable_default_combo_boxes()
             self.action_enable_default_box.setDisabled(False)
             self.action_enable_all_box.setDisabled(False)
@@ -429,9 +419,9 @@ class CSVGraphApp(QMainWindow):
             self.plot_data()
         else:
             self.statusBar().showMessage(f'Amplitude or Thickness file does not exist.')
-            # self.error_box('Attention!. '
-            #                '\nAmplitude or Thickness file does not exist.'
-            #                '\nPlease check the names follow the format: **** - AMP.csv')
+            self.error_box('Attention!. '
+                           '\nAmplitude or Thickness file does not exist.'
+                           '\nPlease check the names follow the format: **** - AMP.csv')
 
     @staticmethod
     def get_csv_filenames(_name: str) -> tuple[str, str]:
@@ -463,7 +453,7 @@ class CSVGraphApp(QMainWindow):
         return True
 
     def process_csv1_thickness(self, name_csv_thickness: str, _delimiter: str) -> None:
-        self.df_csv1_name = QFileInfo(name_csv_thickness + '.csv').baseName()  # fileName() to have it with the extension
+        self.df_csv1_name = QFileInfo(name_csv_thickness + '.csv').baseName()  # fileName() to have it with extension
         self.read_csv_header(name_csv_thickness + '.csv', self.table_csv1, self.df_csv1_name, self.csv1_title)
         self.df_csv1 = self.methods.return_dataframe(name_csv_thickness + '.csv', delimiter=_delimiter, skip=47)
 
