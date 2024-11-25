@@ -2,7 +2,7 @@
 setlocal enabledelayedexpansion
 
 rem ----- switch to master
-git checkout dev
+git checkout master
 
 rem ----- activate enviroment
 call conda activate residual
