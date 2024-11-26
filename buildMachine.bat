@@ -33,5 +33,6 @@ rmdir /s /q "main.dist"
 rmdir /s /q "ResidualCorrosionApp"
 
 rem ---- NSIS installer 
-rem ---- $LocalAppData\Programs
+echo Building NSIS installer...
+makensis .\buildMachine.nsh
 
