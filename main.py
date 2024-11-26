@@ -12,7 +12,6 @@ import numpy as np
 import os
 from scipy import stats
 from methods import Methods
-from progressSpinner import Overlay
 from parameters import UIParameters
 from histogramWidget import HistogramApp
 from dataPlot import DataIntervals
@@ -379,10 +378,6 @@ class CSVGraphApp(QMainWindow):
         self.statusBar().showMessage(f"Ready.")
         self.showMaximized()  # TODO commented while i fix the centering of the spinner
         # GUI ----------
-
-        # Spinner ----------
-        # self.overlay = Overlay(self.centralWidget())
-        # self.overlay.hide()
 
         #endregion
 
@@ -848,10 +843,6 @@ class CSVGraphApp(QMainWindow):
         dlg.setWindowFlags(self.windowFlags() | Qt.WindowType.FramelessWindowHint)
         dlg.setText(message)
         dlg.exec()
-
-    # def resizeEvent(self, event):
-    #     self.overlay.resize(event.size())
-    #     event.accept()
 
 
 if __name__ == "__main__":

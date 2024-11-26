@@ -7,6 +7,9 @@ git checkout master
 rem ----- activate enviroment
 call conda activate residual
 
+rem ----- create buildMachine folder
+mkdir buildMachine
+
 rem ----- "compile"
 python -m nuitka --standalone --windows-icon-from-ico=icons/chart.ico --windows-console-mode=disable main.py --enable-plugin=pyqt6
 
